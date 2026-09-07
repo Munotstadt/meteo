@@ -961,8 +961,11 @@
     }).join('');
   }
 
+  let last10Dates = [];
+
   function renderLast10Table(days){
     const last10 = days.slice(-10);
+    last10Dates = last10.map(function(d){ return d.date; });
     const metrics = [
       { label: 'Temperatur', unit: '°C', decimals: 1, get: function(d){ return d.temp_mean_c; } },
       { label: 'Sonnenschein', unit: 'h', decimals: 1, get: function(d){ return d.sunshine_min != null ? d.sunshine_min / 60 : null; } },
@@ -980,6 +983,26 @@
       }).join('');
       return '<tr><td class="name">' + unitLabel(m.label, m.unit) + '</td>' + cells + '</tr>';
     }).join('');
+  }
+
+  function appendHydroLast10Row(label, readings, key, decimals, unit){
+    if (!last10Dates.length) return;
+    const byDate = {};
+    readings.forEach(function(r){
+      const iso = localISODate(r._date);
+      const v = r[key];
+      if (v == null) return;
+      if (!byDate[iso]) byDate[iso] = [];
+      byDate[iso].push(v);
+    });
+    const cells = last10Dates.map(function(iso){
+      const vals = byDate[iso];
+      if (!vals || !vals.length) return '<td class="price">—</td>';
+      const avg = vals.reduce(function(a,b){ return a+b; }, 0) / vals.length;
+      return '<td class="price">' + fmtCompVal(avg, decimals) + '</td>';
+    }).join('');
+    const rowHtml = '<tr><td class="name">' + unitLabel(label, unit) + '</td>' + cells + '</tr>';
+    document.getElementById('last10Body').insertAdjacentHTML('beforeend', rowHtml);
   }
 
   function monthAvg(days, monthIndex, getValue, yearFilter){
@@ -1336,6 +1359,7 @@
           drawLineChart(chartEl, readings, cfg.key, { color: cfg.color, unit: cfg.unit, decimals: cfg.decimals, showTime: true });
         }
 
+        appendHydroLast10Row(cfg.compareLabel, readings, cfg.key, cfg.decimals, cfg.unit);
         appendHydroComparisonRow(cfg.compareLabel, readings, cfg.key, cfg.decimals, cfg.unit, refDate);
         appendHydroClimatologyRow(cfg.compareLabel, readings, cfg.key, cfg.decimals, cfg.unit, refDate);
       });
@@ -1363,6 +1387,5 @@
   init().then(initHydro);
 </script>
 
-  <script src="https://munotstadt.github.io/db_admin/assets/improvements-button.js" data-app="meteo"></script>
 </body>
 </html>
