@@ -964,7 +964,7 @@
   let last10Dates = [];
 
   function renderLast10Table(days){
-    const last10 = days.slice(-10);
+    const last10 = days.slice(-10).reverse();
     last10Dates = last10.map(function(d){ return d.date; });
     const metrics = [
       { label: 'Temperatur', unit: '°C', decimals: 1, get: function(d){ return d.temp_mean_c; } },
@@ -1386,6 +1386,6 @@
   initCurrent();
   init().then(initHydro);
 </script>
-
+<script src="https://munotstadt.github.io/db_admin/assets/improvements-button.js" data-app="meteo" data-position="left"></script>
 </body>
 </html>
