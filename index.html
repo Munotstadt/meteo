@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Munotstadt Meteo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --red:#E30613;
+    --ink:#14181c;
+    --grey-line:#dde1e4;
+    --grey-mid:#6b7480;
+    --bg:#fafbfc;
+    --card:#ffffff;
+    --max-width:1200px;
+    --font-display:'Space Grotesk',sans-serif;
+    --font-mono:'IBM Plex Mono',monospace;
+    --font-body:'Inter',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);}
+  a{color:inherit;}
+  .topbar{border-bottom:1px solid var(--grey-line);background:var(--card);}
+  .topbar-inner{max-width:var(--max-width);margin:0 auto;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;}
+  .brand{font-family:var(--font-display);font-weight:700;font-size:1.15rem;text-decoration:none;}
+  .brand span{color:var(--red);}
+  .nav{display:flex;gap:24px;font-size:0.9rem;}
+  .nav a{text-decoration:none;color:var(--grey-mid);}
+  .nav a.active{color:var(--ink);font-weight:500;}
+  main{max-width:var(--max-width);margin:0 auto;padding:32px 24px 64px;}
+  h1{font-family:var(--font-display);font-weight:700;font-size:2rem;margin:0 0 4px;}
+  .stand-badge{font-family:var(--font-mono);font-size:0.78rem;color:var(--grey-mid);margin:0 0 32px;}
+  .section-title{font-family:var(--font-display);font-weight:500;font-size:1.05rem;margin:40px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--grey-line);color:var(--ink);}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;}
+  .card{background:var(--card);border:1px solid var(--grey-line);border-radius:6px;padding:16px 18px;}
+  .card .label{font-size:0.78rem;color:var(--grey-mid);margin-bottom:6px;}
+  .card .value{font-family:var(--font-display);font-size:1.6rem;font-weight:700;}
+  .card .unit{font-size:0.9rem;font-weight:400;color:var(--grey-mid);}
+  .hydro-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;}
+  .hydro-card{background:var(--card);border:1px solid var(--grey-line);border-radius:6px;padding:18px 20px;}
+  .hydro-card h3{font-family:var(--font-display);margin:0 0 2px;font-size:1.05rem;}
+  .hydro-card .place{font-size:0.82rem;color:var(--grey-mid);margin-bottom:14px;}
+  .hydro-row{display:flex;justify-content:space-between;font-size:0.88rem;padding:6px 0;border-top:1px solid var(--grey-line);}
+  .hydro-row:first-of-type{border-top:none;}
+  .hydro-row .v{font-family:var(--font-mono);}
+  canvas{width:100%;height:220px;display:block;background:var(--card);border:1px solid var(--grey-line);border-radius:6px;}
+  .muted{color:var(--grey-mid);font-size:0.85rem;}
+  footer{max-width:var(--max-width);margin:0 auto;padding:24px;color:var(--grey-mid);font-size:0.78rem;border-top:1px solid var(--grey-line);}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="/">Munotstadt <span>Meteo</span></a>
+    <nav class="nav">
+      <a href="/" class="active">Dashboard</a>
+      <a href="/sommer.html">Sommervergleich</a>
+    </nav>
+  </div>
+</div>
+
+<main>
+  <h1>Wetter &amp; Hydrologie</h1>
+  <p class="stand-badge" id="stand-badge">Stand: lädt…</p>
+
+  <div class="section-title">Aktuelle Werte — Zürich/Kloten</div>
+  <div class="cards" id="current-cards">
+    <div class="card"><div class="label">Lädt…</div></div>
+  </div>
+
+  <div class="section-title">Temperaturverlauf (30 Tage)</div>
+  <canvas id="temp-chart" width="1100" height="220"></canvas>
+
+  <div class="section-title">Hydrologie — BAFU</div>
+  <div class="hydro-grid" id="hydro-cards">
+    <div class="hydro-card">Lädt…</div>
+  </div>
+</main>
+
+<footer>
+  Daten: MeteoSchweiz (Station Zürich-Kloten) &amp; BAFU via LINDAS. Live aus Cloudflare D1.
+</footer>
+
+<script>
+async function fetchJSON(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`${url}: ${res.status}`);
+  return res.json();
+}
+
+function fmt(n, digits = 1) {
+  return (n === null || n === undefined) ? "–" : Number(n).toFixed(digits);
+}
+
+function drawLineChart(canvas, series, { min, max, color = "#E30613", label }) {
+  const ctx = canvas.getContext("2d");
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, w, h);
+
+  const pad = { l: 40, r: 12, t: 12, b: 24 };
+  const plotW = w - pad.l - pad.r, plotH = h - pad.t - pad.b;
+  const vals = series.map(p => p.v).filter(v => v !== null && v !== undefined);
+  const vMin = min ?? Math.min(...vals);
+  const vMax = max ?? Math.max(...vals);
+  const span = (vMax - vMin) || 1;
+
+  ctx.strokeStyle = "#dde1e4";
+  ctx.fillStyle = "#6b7480";
+  ctx.font = "11px IBM Plex Mono, monospace";
+  ctx.lineWidth = 1;
+  [vMin, (vMin + vMax) / 2, vMax].forEach((v, i) => {
+    const y = pad.t + plotH - ((v - vMin) / span) * plotH;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+    ctx.fillText(fmt(v, 0), 4, y + 4);
+  });
+
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  series.forEach((p, i) => {
+    if (p.v === null || p.v === undefined) return;
+    const x = pad.l + (i / (series.length - 1)) * plotW;
+    const y = pad.t + plotH - ((p.v - vMin) / span) * plotH;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  ctx.fillStyle = "#6b7480";
+  ctx.font = "11px IBM Plex Mono, monospace";
+  [0, Math.floor(series.length / 2), series.length - 1].forEach(i => {
+    const p = series[i]; if (!p) return;
+    const x = pad.l + (i / (series.length - 1)) * plotW;
+    ctx.fillText(p.label, Math.min(Math.max(x - 20, pad.l), w - 60), h - 4);
+  });
+}
+
+async function loadCurrent() {
+  const daily = await fetchJSON("/api/daily?days=30");
+  const latest = daily[daily.length - 1];
+  document.getElementById("stand-badge").textContent =
+    `Stand: ${latest.obs_date} · MeteoSchweiz KLO`;
+
+  document.getElementById("current-cards").innerHTML = `
+    <div class="card"><div class="label">Ø Temperatur</div><div class="value">${fmt(latest.temp_mean_c)}<span class="unit">°C</span></div></div>
+    <div class="card"><div class="label">Min / Max</div><div class="value">${fmt(latest.temp_min_c,0)}/${fmt(latest.temp_max_c,0)}<span class="unit">°C</span></div></div>
+    <div class="card"><div class="label">Niederschlag</div><div class="value">${fmt(latest.precip_mm)}<span class="unit">mm</span></div></div>
+    <div class="card"><div class="label">Sonnenschein</div><div class="value">${fmt(latest.sunshine_min,0)}<span class="unit">min</span></div></div>
+    <div class="card"><div class="label">Wind Ø / Böe</div><div class="value">${fmt(latest.wind_mean_kmh,0)}/${fmt(latest.wind_max_kmh,0)}<span class="unit">km/h</span></div></div>
+    <div class="card"><div class="label">Luftfeuchte</div><div class="value">${fmt(latest.humidity_pct,0)}<span class="unit">%</span></div></div>
+  `;
+
+  const series = daily.map(d => ({
+    v: d.temp_mean_c,
+    label: d.obs_date.slice(5),
+  }));
+  drawLineChart(document.getElementById("temp-chart"), series, { label: "Ø Temp °C" });
+}
+
+async function loadHydro() {
+  const stations = await fetchJSON("/api/hydro?days=30");
+  document.getElementById("hydro-cards").innerHTML = stations.map(s => `
+    <div class="hydro-card">
+      <h3>${s.name}</h3>
+      <div class="place">${s.place} · Station ${s.station_id}</div>
+      ${s.latest ? `
+        <div class="hydro-row"><span>Abfluss</span><span class="v">${fmt(s.latest.discharge_m3s)} m³/s</span></div>
+        <div class="hydro-row"><span>Pegel</span><span class="v">${fmt(s.latest.water_level_m,2)} m</span></div>
+        <div class="hydro-row"><span>Wassertemp.</span><span class="v">${fmt(s.latest.water_temp_c)} °C</span></div>
+        <div class="hydro-row"><span class="muted">Zeit</span><span class="v muted">${s.latest.reading_time.replace('T',' ').slice(0,16)}</span></div>
+      ` : `<p class="muted">Keine Daten</p>`}
+    </div>
+  `).join("");
+}
+
+loadCurrent().catch(err => {
+  document.getElementById("current-cards").innerHTML = `<div class="card">Fehler: ${err.message}</div>`;
+});
+loadHydro().catch(err => {
+  document.getElementById("hydro-cards").innerHTML = `<div class="hydro-card">Fehler: ${err.message}</div>`;
+});
+</script>
+</body>
+</html>
