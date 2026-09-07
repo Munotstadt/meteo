@@ -1,36 +1,31 @@
-// GET /api/hydro?days=30
-// Returns latest reading + recent history per station, grouped by station name.
-const STATIONS = {
-  "2043": { name: "Bodensee", place: "Berlingen" },
-  "2288": { name: "Rhein", place: "Neuhausen" },
-  "2415": { name: "Glatt", place: "Rheinsfelden" },
-};
+// GET /api/hydro
+// Returns { stations: { "<station_id>": { readings: [{ time, discharge_m3s, water_level_m, water_temp_c }] } } }
+// matching the frontend's original static-JSON contract (field name "time", full history
+// since the vertical-bar min/max is computed "seit Beginn der Aufzeichnung").
+const STATIONS = ["2043", "2288", "2415"];
 
-export async function onRequestGet({ request, env }) {
-  const url = new URL(request.url);
-  const days = Math.min(parseInt(url.searchParams.get("days") || "30", 10) || 30, 3650);
-
+export async function onRequestGet({ env }) {
   try {
     const { results } = await env.DB.prepare(
       `SELECT station_id, reading_time, discharge_m3s, water_level_m, water_temp_c
        FROM hydro_readings
-       WHERE reading_time >= datetime('now', ?)
        ORDER BY reading_time ASC`
-    ).bind(`-${days} days`).all();
+    ).all();
 
-    const byStation = {};
-    for (const id of Object.keys(STATIONS)) {
-      byStation[id] = { ...STATIONS[id], station_id: id, readings: [] };
-    }
+    const stations = {};
+    for (const id of STATIONS) stations[id] = { readings: [] };
+
     for (const row of results) {
-      if (byStation[row.station_id]) byStation[row.station_id].readings.push(row);
-    }
-    for (const id of Object.keys(byStation)) {
-      const r = byStation[id].readings;
-      byStation[id].latest = r.length ? r[r.length - 1] : null;
+      if (!stations[row.station_id]) continue;
+      stations[row.station_id].readings.push({
+        time: row.reading_time,
+        discharge_m3s: row.discharge_m3s,
+        water_level_m: row.water_level_m,
+        water_temp_c: row.water_temp_c,
+      });
     }
 
-    return Response.json(Object.values(byStation), {
+    return Response.json({ stations }, {
       headers: { "cache-control": "public, max-age=300" },
     });
   } catch (err) {
