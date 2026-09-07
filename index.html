@@ -3,266 +3,252 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Meteo Data</title>
+<title>Munotstadt Meteo · Übersicht</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --bg: #FFFFFF;
-    --panel: #F7F8FA;
-    --line: #E3E6EA;
-    --text: #1A1D22;
-    --muted: #767E8A;
-    --accent: #E30613;
-    --gain: #1F8A6E;
-    --loss: #C0293D;
-    --warn: #C2703D;
-    --grey-100: #F4F4F4;
-    --radius: 6px;
-  }
-  * { box-sizing: border-box; }
-  body{
-    margin: 0; background: var(--bg); color: var(--text);
-    font-family: 'Inter', system-ui, sans-serif;
-    min-height: 100vh; display: flex; flex-direction: column; align-items: center;
-    padding: 0 0 80px;
-  }
-  header.topbar{
-    width: 100%; box-sizing: border-box;
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 14px 20px; border-bottom: 2px solid var(--text);
-    max-width: 1200px; margin: 0 auto;
-  }
-  header.topbar .brand{ font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 18px; }
-  header.topbar .brand span{ color: var(--accent); }
-  nav.tabs{ display: flex; gap: 4px; }
-  nav.tabs a{
-    text-decoration: none; color: var(--text); font-size: 13px; font-weight: 500;
-    padding: 7px 12px; border-radius: var(--radius); font-family: 'Inter', sans-serif;
-  }
-  nav.tabs a.active, nav.tabs a:hover{ background: var(--grey-100); }
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
-  main.detail-main{ width: 100%; max-width: 1200px; padding: 32px 20px 0; }
-  .detail{ width: 100%; max-width: 1200px; }
+  :root{
+    --red:#E30613;
+    --ink:#1a1a1a;
+    --grey-900:#2b2b2b;
+    --grey-600:#666;
+    --grey-300:#d8d8d8;
+    --grey-100:#f4f4f4;
+    --bg:#ffffff;
+    --radius:6px;
+    --gain:#1e7a34;
+    --loss:#E30613;
+    --warn:#c2703d;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Inter',sans-serif; font-size:15px; line-height:1.45;
+  }
+  h1,h2,h3{ font-family:'Space Grotesk',sans-serif; font-weight:600; margin:0 0 .4em 0; }
+  .mono{ font-family:'IBM Plex Mono',monospace; }
+
+  header.topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 20px; border-bottom:2px solid var(--ink);
+  }
+  header.topbar .brand{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:18px; }
+  header.topbar .brand span{ color:var(--red); }
+  nav.tabs{ display:flex; gap:4px; }
+  nav.tabs a{
+    text-decoration:none; color:var(--ink); font-size:13px; font-weight:500;
+    padding:7px 12px; border-radius:var(--radius);
+  }
+  nav.tabs a.active, nav.tabs a:hover{ background:var(--grey-100); }
+
+  main{ max-width:1080px; margin:0 auto; padding:24px 20px 60px; }
 
   .eyebrow{
-    display: flex; align-items: center; justify-content: flex-end;
-    padding-bottom: 18px; border-bottom: 2px solid var(--accent);
-  }
-  .brand{ display: flex; align-items: baseline; gap: 10px; }
-  .brand h1{
-    font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px;
-    letter-spacing: 0.02em; margin: 0; text-transform: uppercase;
+    display:flex; align-items:center; justify-content:flex-end;
+    padding-bottom:18px; border-bottom:2px solid var(--red);
   }
   .status{
-    display: flex; align-items: center; gap: 8px;
-    font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--muted);
+    display:flex; align-items:center; gap:8px;
+    font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--grey-600);
   }
   .dot{
-    width: 7px; height: 7px; border-radius: 50%; background: var(--gain);
-    box-shadow: 0 0 0 3px rgba(31,138,110,0.15); animation: pulse 2.4s ease-in-out infinite;
+    width:7px; height:7px; border-radius:50%; background:var(--gain);
+    box-shadow:0 0 0 3px rgba(30,122,52,0.15); animation:pulse 2.4s ease-in-out infinite;
   }
-  .dot.stale{ background: var(--muted); box-shadow: none; animation: none; }
-  @media (prefers-reduced-motion: reduce){ .dot{ animation: none; } }
+  .dot.stale{ background:var(--grey-600); box-shadow:none; animation:none; }
+  @media (prefers-reduced-motion: reduce){ .dot{ animation:none; } }
   @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:0.45;} }
 
-  table{ width: 100%; border-collapse: collapse; margin-top: 4px; }
+  table{ width:100%; border-collapse:collapse; margin-top:4px; }
   thead th{
-    text-align: left; font-family: 'IBM Plex Mono', monospace; font-size: 11px;
-    letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 500;
-    padding: 14px 10px 10px; border-bottom: 1px solid var(--line);
+    text-align:left; font-family:'IBM Plex Mono',monospace; font-size:11px;
+    letter-spacing:0.08em; text-transform:uppercase; color:var(--grey-600); font-weight:500;
+    padding:14px 10px 10px; border-bottom:1px solid var(--grey-300);
   }
-  thead th.num{ text-align: right; }
-  tbody td{ padding: 12px 10px; border-bottom: 1px solid var(--line); font-size: 14px; vertical-align: middle; }
-  .price, .time{ font-family: 'IBM Plex Mono', monospace; text-align: right; color: var(--text); white-space: nowrap; }
-  .time{ color: var(--muted); font-size: 13px; text-align: left; }
-  .name{ font-weight: 500; }
-  .chg{ font-family: 'IBM Plex Mono', monospace; text-align: right; white-space: nowrap; font-size: 13px; }
+  thead th.num{ text-align:right; }
+  tbody td{ padding:12px 10px; border-bottom:1px solid var(--grey-300); font-size:14px; vertical-align:middle; }
+  .price, .time{ font-family:'IBM Plex Mono',monospace; text-align:right; color:var(--ink); white-space:nowrap; }
+  .time{ color:var(--grey-600); font-size:13px; text-align:left; }
+  .name{ font-weight:500; }
+  .chg{ font-family:'IBM Plex Mono',monospace; text-align:right; white-space:nowrap; font-size:13px; }
 
   .table-scroll{
-    overflow-x: scroll; -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin; scrollbar-color: var(--line) transparent;
-    margin-top: 4px;
+    overflow-x:scroll; -webkit-overflow-scrolling:touch;
+    scrollbar-width:thin; scrollbar-color:var(--grey-300) transparent;
+    margin-top:4px;
   }
-  .table-scroll::-webkit-scrollbar{ height: 8px; }
-  .table-scroll::-webkit-scrollbar-track{ background: var(--panel); }
-  .table-scroll::-webkit-scrollbar-thumb{ background: var(--line); border-radius: 4px; }
-  .table-scroll table{ margin-top: 0; }
+  .table-scroll::-webkit-scrollbar{ height:8px; }
+  .table-scroll::-webkit-scrollbar-track{ background:var(--grey-100); }
+  .table-scroll::-webkit-scrollbar-thumb{ background:var(--grey-300); border-radius:4px; }
+  .table-scroll table{ margin-top:0; }
   .table-scroll th:first-child, .table-scroll td:first-child{
-    position: sticky; left: 0; background: var(--bg); z-index: 1;
-    box-shadow: 1px 0 0 var(--line);
+    position:sticky; left:0; background:var(--bg); z-index:1;
+    box-shadow:1px 0 0 var(--grey-300);
   }
-  .price.current{ font-weight: 700; color: var(--text); }
-  .chg.up{ color: var(--gain); }
-  .chg.down{ color: var(--loss); }
-  .chg.flat{ color: var(--muted); }
+  .price.current{ font-weight:700; color:var(--ink); }
+  .chg.up{ color:var(--gain); }
+  .chg.down{ color:var(--loss); }
+  .chg.flat{ color:var(--grey-600); }
   .empty, .error{
-    padding: 40px 10px; text-align: center; color: var(--muted);
-    font-family: 'IBM Plex Mono', monospace; font-size: 13px;
+    padding:40px 10px; text-align:center; color:var(--grey-600);
+    font-family:'IBM Plex Mono',monospace; font-size:13px;
   }
-  .error{ color: var(--loss); }
+  .error{ color:var(--loss); }
 
   .detail-header{
-    display: flex; align-items: baseline; justify-content: space-between;
-    padding-bottom: 18px; border-bottom: 1px solid var(--line);
+    display:flex; align-items:baseline; justify-content:space-between;
+    padding-bottom:18px; border-bottom:1px solid var(--grey-300);
   }
-  .detail-header h2{ font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px; margin: 0; }
+  .detail-header h2{ font-size:20px; margin:0; }
   .stand-badge{
-    font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500;
-    color: var(--muted); vertical-align: middle; margin-left: 4px;
+    font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:500;
+    color:var(--grey-600); vertical-align:middle; margin-left:4px;
   }
-  .detail-returns{ display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+  .detail-returns{ display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; }
   .return-box{
-    display: flex; flex-direction: column; gap: 4px;
-    padding: 10px 14px; background: var(--panel); border: 1px solid var(--line);
-    border-radius: var(--radius); min-width: 108px; flex: 1 1 108px;
+    display:flex; flex-direction:column; gap:4px;
+    padding:10px 14px; background:var(--grey-100); border:1px solid var(--grey-300);
+    border-radius:var(--radius); min-width:108px; flex:1 1 108px;
   }
   .return-label{
-    font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.06em;
-    text-transform: uppercase; color: var(--muted);
+    font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.06em;
+    text-transform:uppercase; color:var(--grey-600);
   }
-  .return-value{ font-family: 'IBM Plex Mono', monospace; font-size: 20px; font-weight: 600; }
-  .return-value.up{ color: var(--gain); }
-  .return-value.down{ color: var(--loss); }
-  .return-value.flat{ color: var(--text); }
-  .return-abs{ font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); }
-  .return-abs.up{ color: var(--gain); }
-  .return-abs.down{ color: var(--loss); }
-  .detail-meta{ font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--muted); margin-top: 16px; }
+  .return-value{ font-family:'IBM Plex Mono',monospace; font-size:20px; font-weight:600; }
+  .return-value.up{ color:var(--gain); }
+  .return-value.down{ color:var(--loss); }
+  .return-value.flat{ color:var(--ink); }
+  .return-abs{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--grey-600); }
+  .return-abs.up{ color:var(--gain); }
+  .return-abs.down{ color:var(--loss); }
+  .detail-meta{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--grey-600); margin-top:16px; }
 
-  .section-divider{ border: none; border-top: 1px solid var(--line); margin: 36px 0; }
-  .section-heading{
-    font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 18px;
-    margin: 0 0 4px;
+  .section-divider{ border:none; border-top:1px solid var(--grey-300); margin:36px 0; }
+  .section-heading{ font-size:18px; margin:0 0 4px; }
+  .subsection-heading{
+    display:flex; align-items:baseline; justify-content:space-between;
+    margin:40px 0 16px; padding-bottom:14px; border-bottom:2px solid var(--red);
   }
+  .subsection-heading h2{ font-size:20px; margin:0; }
 
-  .range-row{
-    display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 16px;
-  }
+  .range-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:16px; }
   .range-btn{
-    background: none; border: 1px solid var(--line); color: var(--muted);
-    font-family: 'IBM Plex Mono', monospace; font-size: 12px; padding: 6px 12px;
-    border-radius: var(--radius); cursor: pointer;
-    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+    background:none; border:1px solid var(--grey-300); color:var(--grey-600);
+    font-family:'IBM Plex Mono',monospace; font-size:12px; padding:6px 12px;
+    border-radius:var(--radius); cursor:pointer;
+    transition:border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
   }
-  .range-btn:hover{ border-color: var(--muted); color: var(--text); }
-  .range-btn.active{ background: var(--text); border-color: var(--text); color: var(--bg); font-weight: 600; }
-  .range-btn:focus-visible{ outline: 2px solid var(--accent); outline-offset: 2px; }
-  .range-sep{ width: 1px; height: 18px; background: var(--line); margin: 0 2px; }
-  .custom-range{ display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-  .custom-range label{ font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--muted); }
+  .range-btn:hover{ border-color:var(--grey-600); color:var(--ink); }
+  .range-btn.active{ background:var(--ink); border-color:var(--ink); color:#fff; font-weight:600; }
+  .range-btn:focus-visible{ outline:2px solid var(--red); outline-offset:2px; }
+  .range-sep{ width:1px; height:18px; background:var(--grey-300); margin:0 2px; }
+  .custom-range{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .custom-range label{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--grey-600); }
   .custom-range input[type="date"]{
-    font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text);
-    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
-    padding: 5px 8px;
+    font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink);
+    background:var(--grey-100); border:1px solid var(--grey-300); border-radius:var(--radius);
+    padding:5px 8px;
   }
-  .custom-range input[type="date"]:focus-visible{ outline: 2px solid var(--accent); outline-offset: 1px; }
+  .custom-range input[type="date"]:focus-visible{ outline:2px solid var(--red); outline-offset:1px; }
 
   .history-title{
-    font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.08em;
-    text-transform: uppercase; color: var(--accent); margin: 32px 0 6px;
+    font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.08em;
+    text-transform:uppercase; color:var(--red); margin:32px 0 6px;
   }
   .collapsible-toggle{
-    display: flex; align-items: center; gap: 6px;
-    background: none; border: none; padding: 0; margin: 32px 0 6px;
-    cursor: pointer; width: 100%; text-align: left;
+    display:flex; align-items:center; gap:6px;
+    background:none; border:none; padding:0; margin:32px 0 6px;
+    cursor:pointer; width:100%; text-align:left;
   }
-  .collapsible-toggle:hover .collapsible-arrow{ color: var(--text); }
-  .collapsible-toggle:focus-visible{ outline: 2px solid var(--accent); outline-offset: 2px; }
+  .collapsible-toggle:hover .collapsible-arrow{ color:var(--ink); }
+  .collapsible-toggle:focus-visible{ outline:2px solid var(--red); outline-offset:2px; }
   .collapsible-arrow{
-    display: inline-block; font-size: 9px; color: var(--muted);
-    transition: transform 0.15s ease, color 0.15s ease;
+    display:inline-block; font-size:9px; color:var(--grey-600);
+    transition:transform 0.15s ease, color 0.15s ease;
   }
-  .collapsible-toggle[aria-expanded="true"] .collapsible-arrow{ transform: rotate(90deg); }
+  .collapsible-toggle[aria-expanded="true"] .collapsible-arrow{ transform:rotate(90deg); }
 
   .chart-wrap{
-    margin: 0 0 8px; background: var(--panel); border: 1px solid var(--line);
-    border-radius: var(--radius); padding: 20px 16px 12px;
+    margin:0 0 8px; background:var(--grey-100); border:1px solid var(--grey-300);
+    border-radius:var(--radius); padding:20px 16px 12px;
   }
-  .chart-wrap svg{ display: block; width: 100%; height: auto; }
-  .chart-hit-area{ cursor: pointer; touch-action: pan-y; }
-  .chart-tooltip-g .tooltip-bg{ opacity: 0.95; }
-  .chart-tooltip-g .tooltip-line{ pointer-events: none; }
-  .chart-tooltip-g .tooltip-dot{ pointer-events: none; }
-  .chart-tooltip-g .tooltip-text{ pointer-events: none; }
-  .chart-empty{ padding: 40px 10px; text-align: center; color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 13px; }
+  .chart-wrap svg{ display:block; width:100%; height:auto; }
+  .chart-hit-area{ cursor:pointer; touch-action:pan-y; }
+  .chart-tooltip-g .tooltip-bg{ opacity:0.95; }
+  .chart-tooltip-g .tooltip-line{ pointer-events:none; }
+  .chart-tooltip-g .tooltip-dot{ pointer-events:none; }
+  .chart-tooltip-g .tooltip-text{ pointer-events:none; }
+  .chart-empty{ padding:40px 10px; text-align:center; color:var(--grey-600); font-family:'IBM Plex Mono',monospace; font-size:13px; }
   .chart-readout{
-    font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--muted);
-    margin: 6px 2px 0; min-height: 16px;
+    font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--grey-600);
+    margin:6px 2px 0; min-height:16px;
   }
-  .chart-readout.active{ color: var(--text); font-weight: 600; }
+  .chart-readout.active{ color:var(--ink); font-weight:600; }
 
   .footer{
-    margin-top: 22px; display: flex; align-items: center; justify-content: space-between;
-    font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--muted); flex-wrap: wrap; gap: 6px;
+    margin-top:22px; display:flex; align-items:center; justify-content:space-between;
+    font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--grey-600); flex-wrap:wrap; gap:6px;
   }
   .footer-note{
-    margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line);
-    font-family: 'Inter', sans-serif; font-size: 12px; line-height: 1.5; color: var(--muted);
+    margin-top:10px; padding-top:10px; border-top:1px solid var(--grey-300);
+    font-family:'Inter',sans-serif; font-size:12px; line-height:1.5; color:var(--grey-600);
   }
 
-  .hydro-cards{ display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
-  .hydro-section-header{
-    display: flex; align-items: baseline; justify-content: space-between;
-    margin: 40px 0 16px; padding-bottom: 14px; border-bottom: 2px solid var(--accent);
-  }
-  .hydro-section-header h2{ font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px; margin: 0; }
-
+  .hydro-cards{ display:flex; gap:12px; flex-wrap:wrap; margin-top:16px; }
   .hydro-card{
-    flex: 1 1 170px;
-    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
-    padding: 14px 16px 16px; display: flex; flex-direction: column; align-items: center;
+    flex:1 1 170px;
+    background:var(--grey-100); border:1px solid var(--grey-300); border-radius:var(--radius);
+    padding:14px 16px 16px; display:flex; flex-direction:column; align-items:center;
   }
-  .hydro-card-head{ width: 100%; display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+  .hydro-card-head{ width:100%; display:flex; flex-direction:column; gap:4px; margin-bottom:14px; }
   .hydro-card-label{
-    font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.06em;
-    text-transform: uppercase; color: var(--muted);
+    font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.06em;
+    text-transform:uppercase; color:var(--grey-600);
   }
-  .hydro-card-delta{ font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; white-space: nowrap; }
-  .hydro-card-delta.up{ color: var(--gain); }
-  .hydro-card-delta.down{ color: var(--loss); }
-  .hydro-card-delta.flat{ color: var(--muted); }
+  .hydro-card-delta{ font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; white-space:nowrap; }
+  .hydro-card-delta.up{ color:var(--gain); }
+  .hydro-card-delta.down{ color:var(--loss); }
+  .hydro-card-delta.flat{ color:var(--grey-600); }
 
   .vbar-max-label, .vbar-min-label{
-    font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; color: var(--text);
-    white-space: nowrap;
+    font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; color:var(--ink);
+    white-space:nowrap;
   }
-  .vbar-track-wrap{ position: relative; width: 12px; height: 140px; margin: 6px 0; }
+  .vbar-track-wrap{ position:relative; width:12px; height:140px; margin:6px 0; }
   .vbar-track{
-    position: absolute; left: 0; top: 0; width: 12px; height: 100%; border-radius: 6px;
-    background: linear-gradient(to top, var(--line), var(--station-color, var(--text)));
+    position:absolute; left:0; top:0; width:12px; height:100%; border-radius:6px;
+    background:linear-gradient(to top, var(--grey-300), var(--station-color, var(--ink)));
   }
   .vbar-marker{
-    position: absolute; left: 50%; bottom: 0%; transform: translate(-50%, 50%);
-    display: flex; align-items: center; gap: 6px; white-space: nowrap;
-    transition: bottom 0.2s ease;
+    position:absolute; left:50%; bottom:0%; transform:translate(-50%, 50%);
+    display:flex; align-items:center; gap:6px; white-space:nowrap;
+    transition:bottom 0.2s ease;
   }
-  .vbar-marker::before{ content: ''; width: 18px; height: 2px; background: var(--text); display: block; flex-shrink: 0; }
+  .vbar-marker::before{ content:''; width:18px; height:2px; background:var(--ink); display:block; flex-shrink:0; }
   .vbar-marker-value{
-    font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 700;
-    background: var(--text); color: var(--bg); padding: 2px 6px; border-radius: 3px;
+    font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:700;
+    background:var(--ink); color:#fff; padding:2px 6px; border-radius:3px;
   }
-  .hydro-card-meta{ font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); margin-top: 12px; text-align: center; }
-  .hydro-card.stale{ border-color: var(--warn); }
+  .hydro-card-meta{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--grey-600); margin-top:12px; text-align:center; }
+  .hydro-card-wtemp{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--grey-600); margin-top:4px; text-align:center; }
+  .hydro-card.stale{ border-color:var(--warn); }
   .stale-badge{
-    display: inline-block; font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 0.04em; color: #fff; background: var(--warn);
-    padding: 2px 6px; border-radius: 3px; margin-top: 4px;
+    display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:700;
+    text-transform:uppercase; letter-spacing:0.04em; color:#fff; background:var(--warn);
+    padding:2px 6px; border-radius:3px; margin-top:4px;
   }
-  .hydro-caption{
-    font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted);
-    margin-top: 10px;
-  }
+  .hydro-caption{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--grey-600); margin-top:10px; }
 
   @media (max-width: 560px){
-    .return-value{ font-size: 17px; }
+    .return-value{ font-size:17px; }
     #historyTable thead th:nth-child(6), #historyTable tbody td:nth-child(6),
-    #historyTable thead th:nth-child(7), #historyTable tbody td:nth-child(7) { display: none; }
+    #historyTable thead th:nth-child(7), #historyTable tbody td:nth-child(7) { display:none; }
     #comparisonTable thead th:nth-child(4), #comparisonTable tbody td:nth-child(4),
     #comparisonTable thead th:nth-child(5), #comparisonTable tbody td:nth-child(5),
     #comparisonTable thead th:nth-child(8), #comparisonTable tbody td:nth-child(8),
-    #comparisonTable thead th:nth-child(9), #comparisonTable tbody td:nth-child(9) { display: none; }
+    #comparisonTable thead th:nth-child(9), #comparisonTable tbody td:nth-child(9) { display:none; }
   }
 </style>
 </head>
@@ -276,7 +262,7 @@
   </nav>
 </header>
 
-<main class="detail-main">
+<main>
 <div class="detail" id="detailView">
   <div class="eyebrow">
     <div class="status">
@@ -290,19 +276,20 @@
     <span class="stand-badge" id="standBadge">—</span>
   </div>
 
-  <div class="detail-returns" id="detailReturns">
-    <div class="return-box"><span class="return-label">Temp. Mittel</span><span class="return-value" id="valTempMean">—</span><span class="return-abs" id="valTempMeanAbs"></span></div>
-    <div class="return-box"><span class="return-label">Temp. Min</span><span class="return-value" id="valTempMin">—</span><span class="return-abs" id="valTempMinAbs"></span></div>
-    <div class="return-box"><span class="return-label">Temp. Max</span><span class="return-value" id="valTempMax">—</span><span class="return-abs" id="valTempMaxAbs"></span></div>
-    <div class="return-box"><span class="return-label">Niederschlag</span><span class="return-value" id="valPrecip">—</span><span class="return-abs" id="valPrecipAbs"></span></div>
-    <div class="return-box"><span class="return-label">Sonnenstunden</span><span class="return-value" id="valSun">—</span><span class="return-abs" id="valSunAbs"></span></div>
-    <div class="return-box"><span class="return-label">Globalstrahlung</span><span class="return-value" id="valRad">—</span><span class="return-abs" id="valRadAbs"></span></div>
-    <div class="return-box"><span class="return-label">Wind Mittel</span><span class="return-value" id="valWind">—</span><span class="return-abs" id="valWindAbs"></span></div>
-    <div class="return-box"><span class="return-label">Böenspitze</span><span class="return-value" id="valWindMax">—</span><span class="return-abs" id="valWindMaxAbs"></span></div>
-    <div class="return-box"><span class="return-label">Luftfeuchtigkeit</span><span class="return-value" id="valHum">—</span><span class="return-abs" id="valHumAbs"></span></div>
+  <div class="history-title" style="margin-top:20px;">Aktuell</div>
+  <div class="detail-returns" id="currentReturns">
+    <div class="return-box"><span class="return-label">Temp. Aktuell</span><span class="return-value" id="curTemp">—</span></div>
+    <div class="return-box"><span class="return-label">Niederschlag 24h</span><span class="return-value" id="curPrecip24">—</span></div>
+    <div class="return-box"><span class="return-label">Niederschlag heute</span><span class="return-value" id="curPrecipToday">—</span></div>
+    <div class="return-box"><span class="return-label">Sonnenschein 24h</span><span class="return-value" id="curSun24">—</span></div>
+    <div class="return-box"><span class="return-label">Sonnenschein heute</span><span class="return-value" id="curSunToday">—</span></div>
+    <div class="return-box"><span class="return-label">Wind Ø / Max 24h</span><span class="return-value" id="curWind24">—</span></div>
   </div>
+  <div class="history-title">Temperatur — letzte 48h (°C)</div>
+  <div class="chart-wrap" id="chart48h"><div class="chart-empty">Loading chart…</div></div>
+  <div class="chart-readout" id="chart48hReadout">Tippe auf einen Punkt für Details.</div>
 
-  <div class="hydro-section-header">
+  <div class="subsection-heading">
     <h2>Hydrodaten</h2>
     <span class="stand-badge" id="hydroStandBadge">—</span>
   </div>
@@ -320,6 +307,7 @@
       </div>
       <span class="vbar-min-label" id="minBodensee">—</span>
       <div class="hydro-card-meta" id="metaBodensee"></div>
+      <div class="hydro-card-wtemp" id="wtempBodensee"></div>
     </div>
 
     <div class="hydro-card" id="cardRhein">
@@ -334,6 +322,7 @@
       </div>
       <span class="vbar-min-label" id="minRhein">—</span>
       <div class="hydro-card-meta" id="metaRhein"></div>
+      <div class="hydro-card-wtemp" id="wtempRhein"></div>
     </div>
 
     <div class="hydro-card" id="cardGlatt">
@@ -348,13 +337,39 @@
       </div>
       <span class="vbar-min-label" id="minGlatt">—</span>
       <div class="hydro-card-meta" id="metaGlatt"></div>
+      <div class="hydro-card-wtemp" id="wtempGlatt"></div>
     </div>
   </div>
   <div class="hydro-caption">Min/Max jeweils seit Beginn der Aufzeichnung.</div>
 
   <hr class="section-divider">
 
-  <div class="history-title">Vergleich — Tagesdurchschnitte</div>
+  <div class="history-title">Werte von gestern</div>
+  <div class="detail-returns" id="yesterdayReturns">
+    <div class="return-box"><span class="return-label">Temp. Mittel</span><span class="return-value" id="yTempMean">—</span></div>
+    <div class="return-box"><span class="return-label">Temp. Min</span><span class="return-value" id="yTempMin">—</span></div>
+    <div class="return-box"><span class="return-label">Temp. Max</span><span class="return-value" id="yTempMax">—</span></div>
+    <div class="return-box"><span class="return-label">Niederschlag</span><span class="return-value" id="yPrecip">—</span></div>
+    <div class="return-box"><span class="return-label">Sonnenstunden</span><span class="return-value" id="ySun">—</span></div>
+    <div class="return-box"><span class="return-label">Globalstrahlung</span><span class="return-value" id="yRad">—</span></div>
+    <div class="return-box"><span class="return-label">Wind Mittel</span><span class="return-value" id="yWind">—</span></div>
+    <div class="return-box"><span class="return-label">Böenspitze</span><span class="return-value" id="yWindMax">—</span></div>
+    <div class="return-box"><span class="return-label">Luftfeuchtigkeit</span><span class="return-value" id="yHum">—</span></div>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="history-title">Vergleich — Tagesdurchschnitte (letzte 10 Tage)</div>
+  <div class="table-scroll">
+    <table id="last10Table">
+      <thead><tr id="last10Head"><th>Kennzahl</th></tr></thead>
+      <tbody id="last10Body">
+        <tr><td class="empty">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="history-title" style="margin-top:32px;">Vergleich — Tagesdurchschnitte</div>
   <div class="table-scroll">
     <table id="comparisonTable">
       <thead>
@@ -480,7 +495,7 @@
     <span id="detailMeta">—</span>
   </div>
   <div class="footer-note">
-    Ein automatisierter Collector (GitHub Actions) ruft alle 2 Stunden die Rohdaten von MeteoSchweiz und BAFU ab und schreibt sie in die Cloud-Datenbank (Cloudflare D1). Diese Seite fragt die Daten live über Cloudflare Pages Functions ab — es gibt keinen statischen JSON-Export mehr. Die hier angezeigten Werte sind somit maximal 2 Stunden alt.
+    Ein automatisierter Collector (GitHub Actions) ruft alle 2 Stunden die Rohdaten von MeteoSchweiz und BAFU ab und schreibt sie in Cloudflare D1. Diese Seite fragt die Daten live über Cloudflare Pages Functions ab. Die "Aktuell"-Werte basieren auf den stündlichen Messwerten, alle übrigen Auswertungen auf den Tageswerten.
   </div>
 </div>
 </main>
@@ -488,20 +503,30 @@
 <script>
   const DATA_URL = "/api/daily";
   const HYDRO_DATA_URL = "/api/hydro";
+  const HOURLY_DATA_URL = "/api/hourly?hours=48";
 
   let comparisonRefDate = null;
 
   function fmt1(n){ return n == null ? '—' : n.toLocaleString('de-CH', { minimumFractionDigits: 1, maximumFractionDigits: 1 }); }
   function fmt0(n){ return n == null ? '—' : Math.round(n).toLocaleString('de-CH'); }
+  function fmt2(n){ return n == null ? '—' : n.toLocaleString('de-CH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
   function fmtDate(iso){
     const parts = iso.split('-');
     return parts[2] + '.' + parts[1] + '.' + parts[0];
   }
+  function fmtDateShort(iso){
+    const parts = iso.split('-');
+    return parts[2] + '.' + parts[1] + '.';
+  }
 
   function parseISO(iso){
     const parts = iso.split('-').map(Number);
     return new Date(parts[0], parts[1] - 1, parts[2]);
+  }
+
+  function localISODate(d){
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
   }
 
   function setCard(idPrefix, current, previous, unit, decimals){
@@ -519,6 +544,10 @@
     } else {
       absEl.textContent = '';
     }
+  }
+
+  function setSimpleCard(id, value){
+    document.getElementById(id).textContent = value == null ? '—' : value;
   }
 
   function filterByRange(days, range, customFrom, customTo){
@@ -567,9 +596,9 @@
 
   function buildTooltipGroup(color){
     return '<g class="chart-tooltip-g" style="display:none">' +
-      '<line class="tooltip-line" stroke="#767E8A" stroke-width="1" stroke-dasharray="3,3" />' +
+      '<line class="tooltip-line" stroke="#666" stroke-width="1" stroke-dasharray="3,3" />' +
       '<circle class="tooltip-dot" r="4" fill="' + color + '" stroke="#fff" stroke-width="1.5" />' +
-      '<rect class="tooltip-bg" rx="3" fill="#1A1D22" />' +
+      '<rect class="tooltip-bg" rx="3" fill="#1a1a1a" />' +
       '<text class="tooltip-text" fill="#fff" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="600" text-anchor="middle"></text>' +
     '</g>';
   }
@@ -691,7 +720,7 @@
     function yScale(v){ return pad.top + innerH - ((v - yMin) / (yMax - yMin)) * innerH; }
 
     const firstVal = points[0].v, lastVal = points[points.length - 1].v;
-    const lineColor = opts.color || (lastVal >= firstVal ? '#1F8A6E' : '#C0293D');
+    const lineColor = opts.color || (lastVal >= firstVal ? '#1e7a34' : '#E30613');
 
     let bandPath = '';
     if (bandPoints && bandPoints.length >= 2) {
@@ -723,8 +752,8 @@
     for (let i = 0; i <= steps; i++) {
       const v = yMin + (i / steps) * (yMax - yMin);
       const y = yScale(v);
-      gridLines += '<line x1="' + pad.left + '" y1="' + y.toFixed(1) + '" x2="' + (width - pad.right) + '" y2="' + y.toFixed(1) + '" stroke="#E3E6EA" stroke-width="1" />';
-      gridLines += '<text x="' + (pad.left - 8) + '" y="' + (y + 3).toFixed(1) + '" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10" fill="#767E8A">' + fmt1(v) + '</text>';
+      gridLines += '<line x1="' + pad.left + '" y1="' + y.toFixed(1) + '" x2="' + (width - pad.right) + '" y2="' + y.toFixed(1) + '" stroke="#d8d8d8" stroke-width="1" />';
+      gridLines += '<text x="' + (pad.left - 8) + '" y="' + (y + 3).toFixed(1) + '" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10" fill="#666">' + fmt1(v) + '</text>';
     }
 
     const midPoint = points[Math.floor(points.length / 2)];
@@ -733,9 +762,15 @@
       const x = xScale(p.dt.getTime());
       const dd = String(p.dt.getDate()).padStart(2,'0');
       const mm = String(p.dt.getMonth()+1).padStart(2,'0');
-      const label = dd + '.' + mm + '.' + p.dt.getFullYear();
+      let label;
+      if (opts.showTime) {
+        const hh = String(p.dt.getHours()).padStart(2,'0');
+        label = dd + '.' + mm + ' ' + hh + ':00';
+      } else {
+        label = dd + '.' + mm + '.' + p.dt.getFullYear();
+      }
       const anchor = i === 0 ? 'start' : (i === xLabelPoints.length - 1 ? 'end' : 'middle');
-      return '<text x="' + x.toFixed(1) + '" y="' + (height - 8) + '" text-anchor="' + anchor + '" font-family="IBM Plex Mono, monospace" font-size="10" fill="#767E8A">' + label + '</text>';
+      return '<text x="' + x.toFixed(1) + '" y="' + (height - 8) + '" text-anchor="' + anchor + '" font-family="IBM Plex Mono, monospace" font-size="10" fill="#666">' + label + '</text>';
     }).join('');
 
     const bandSvg = bandPath ? '<path d="' + bandPath + '" fill="' + lineColor + '" opacity="0.10" stroke="none" />' : '';
@@ -790,7 +825,7 @@
     function xScale(t){ return pad.left + ((t - minX) / xSpan) * innerW; }
     function yScale(v){ return pad.top + innerH - ((v - yMin) / (yMax - yMin || 1)) * innerH; }
 
-    const barColor = opts.color || '#1F6FA8';
+    const barColor = opts.color || '#1a1a1a';
     const avgSpacing = xSpan / (points.length - 1);
     const barW = Math.max(1, Math.min(14, (avgSpacing / xSpan) * innerW * 0.7));
 
@@ -808,8 +843,8 @@
     for (let i = 0; i <= steps; i++) {
       const v = yMin + (i / steps) * (yMax - yMin);
       const y = yScale(v);
-      gridLines += '<line x1="' + pad.left + '" y1="' + y.toFixed(1) + '" x2="' + (width - pad.right) + '" y2="' + y.toFixed(1) + '" stroke="#E3E6EA" stroke-width="1" />';
-      gridLines += '<text x="' + (pad.left - 8) + '" y="' + (y + 3).toFixed(1) + '" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10" fill="#767E8A">' + fmt1(v) + '</text>';
+      gridLines += '<line x1="' + pad.left + '" y1="' + y.toFixed(1) + '" x2="' + (width - pad.right) + '" y2="' + y.toFixed(1) + '" stroke="#d8d8d8" stroke-width="1" />';
+      gridLines += '<text x="' + (pad.left - 8) + '" y="' + (y + 3).toFixed(1) + '" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10" fill="#666">' + fmt1(v) + '</text>';
     }
 
     const midPoint = points[Math.floor(points.length / 2)];
@@ -820,7 +855,7 @@
       const mm = String(p.dt.getMonth()+1).padStart(2,'0');
       const label = dd + '.' + mm + '.' + p.dt.getFullYear();
       const anchor = i === 0 ? 'start' : (i === xLabelPoints.length - 1 ? 'end' : 'middle');
-      return '<text x="' + x.toFixed(1) + '" y="' + (height - 8) + '" text-anchor="' + anchor + '" font-family="IBM Plex Mono, monospace" font-size="10" fill="#767E8A">' + label + '</text>';
+      return '<text x="' + x.toFixed(1) + '" y="' + (height - 8) + '" text-anchor="' + anchor + '" font-family="IBM Plex Mono, monospace" font-size="10" fill="#666">' + label + '</text>';
     }).join('');
 
     const registryPoints = points.map(function(p){
@@ -926,6 +961,27 @@
     }).join('');
   }
 
+  function renderLast10Table(days){
+    const last10 = days.slice(-10);
+    const metrics = [
+      { label: 'Temperatur', unit: '°C', decimals: 1, get: function(d){ return d.temp_mean_c; } },
+      { label: 'Sonnenschein', unit: 'h', decimals: 1, get: function(d){ return d.sunshine_min != null ? d.sunshine_min / 60 : null; } },
+      { label: 'Niederschlag', unit: 'mm', decimals: 1, get: function(d){ return d.precip_mm; } },
+      { label: 'Globalstrahlung', unit: 'W/m²', decimals: 0, get: function(d){ return d.radiation_wm2; } },
+    ];
+    const head = document.getElementById('last10Head');
+    head.innerHTML = '<th>Kennzahl</th>' + last10.map(function(d){
+      return '<th class="num">' + fmtDateShort(d.date) + '</th>';
+    }).join('');
+
+    document.getElementById('last10Body').innerHTML = metrics.map(function(m){
+      const cells = last10.map(function(d){
+        return '<td class="price">' + fmtCompVal(m.get(d), m.decimals) + '</td>';
+      }).join('');
+      return '<tr><td class="name">' + unitLabel(m.label, m.unit) + '</td>' + cells + '</tr>';
+    }).join('');
+  }
+
   function monthAvg(days, monthIndex, getValue, yearFilter){
     const vals = [];
     for (let i = 0; i < days.length; i++) {
@@ -973,6 +1029,30 @@
     document.getElementById('climatologyBody').insertAdjacentHTML('beforeend', rowHtml);
   }
 
+  function renderYesterday(days, todayISO){
+    const yesterdayISO = localISODate(addDays(parseISO(todayISO), -1));
+    let row = days.find(function(d){ return d.date === yesterdayISO; });
+    if (!row) {
+      const past = days.filter(function(d){ return d.date < todayISO; });
+      row = past.length ? past[past.length - 1] : null;
+    }
+    if (!row) return;
+    setCard2('yTempMean', row.temp_mean_c, '°C', 1);
+    setCard2('yTempMin', row.temp_min_c, '°C', 1);
+    setCard2('yTempMax', row.temp_max_c, '°C', 1);
+    setCard2('yPrecip', row.precip_mm, ' mm', 1);
+    setCard2('ySun', row.sunshine_min != null ? row.sunshine_min / 60 : null, ' h', 1);
+    setCard2('yRad', row.radiation_wm2, ' W/m²', 0);
+    setCard2('yWind', row.wind_mean_kmh, ' km/h', 1);
+    setCard2('yWindMax', row.wind_max_kmh, ' km/h', 1);
+    setCard2('yHum', row.humidity_pct, ' %', 0);
+  }
+
+  function setCard2(id, value, unit, decimals){
+    const fmt = decimals === 0 ? fmt0 : fmt1;
+    document.getElementById(id).textContent = value == null ? '—' : (fmt(value) + unit);
+  }
+
   async function init() {
     const dot = document.getElementById('statusDot');
     const statusText = document.getElementById('statusText');
@@ -985,27 +1065,18 @@
 
       const days = data.days.map(function(d){ return Object.assign({}, d, { _date: parseISO(d.date) }); });
       const latest = days[days.length - 1];
-      const prev = days.length >= 2 ? days[days.length - 2] : null;
 
       dot.classList.remove('stale');
       statusText.textContent = 'live';
-
-      setCard('TempMean', latest.temp_mean_c, prev ? prev.temp_mean_c : null, '°C', 1);
-      setCard('TempMin', latest.temp_min_c, prev ? prev.temp_min_c : null, '°C', 1);
-      setCard('TempMax', latest.temp_max_c, prev ? prev.temp_max_c : null, '°C', 1);
-      setCard('Precip', latest.precip_mm, prev ? prev.precip_mm : null, ' mm', 1);
-      setCard('Sun', latest.sunshine_min != null ? latest.sunshine_min / 60 : null,
-                     prev && prev.sunshine_min != null ? prev.sunshine_min / 60 : null, ' h', 1);
-      setCard('Rad', latest.radiation_wm2, prev ? prev.radiation_wm2 : null, ' W/m²', 0);
-      setCard('Wind', latest.wind_mean_kmh, prev ? prev.wind_mean_kmh : null, ' km/h', 1);
-      setCard('WindMax', latest.wind_max_kmh, prev ? prev.wind_max_kmh : null, ' km/h', 1);
-      setCard('Hum', latest.humidity_pct, prev ? prev.humidity_pct : null, ' %', 0);
 
       document.getElementById('standBadge').textContent = 'Stand ' + fmtDate(latest.date);
       document.getElementById('detailMeta').textContent =
         'Quelle: MeteoSchweiz · ' + days.length + ' Tage im Archiv';
 
       comparisonRefDate = latest._date;
+      const todayISO = localISODate(new Date());
+
+      renderYesterday(days, todayISO);
 
       let currentRange = '30D';
       let customFrom = null, customTo = null;
@@ -1021,11 +1092,11 @@
       function renderCharts(){
         const filtered = filterByRange(days, currentRange, customFrom, customTo);
         drawLineChart(chartContainers.Temp, filtered, 'temp_mean_c', { bandMinKey: 'temp_min_c', bandMaxKey: 'temp_max_c', color: '#E30613', unit: '°C', decimals: 1 });
-        drawBarChart(chartContainers.Precip, filtered, 'precip_mm', { color: '#1F8A6E', unit: ' mm', decimals: 1 });
+        drawBarChart(chartContainers.Precip, filtered, 'precip_mm', { color: '#1e7a34', unit: ' mm', decimals: 1 });
         const withSunHours2 = filtered.map(function(d){ return Object.assign({}, d, { sunshine_h: d.sunshine_min != null ? d.sunshine_min / 60 : null }); });
-        drawBarChart(chartContainers.Sun, withSunHours2, 'sunshine_h', { color: '#C08A00', unit: ' h', decimals: 1 });
+        drawBarChart(chartContainers.Sun, withSunHours2, 'sunshine_h', { color: '#c2703d', unit: ' h', decimals: 1 });
         drawBarChart(chartContainers.Rad, filtered, 'radiation_wm2', { color: '#8A5CC0', unit: ' W/m²', decimals: 0 });
-        drawLineChart(chartContainers.Wind, filtered, 'wind_mean_kmh', { color: '#767E8A', unit: ' km/h', decimals: 1 });
+        drawLineChart(chartContainers.Wind, filtered, 'wind_mean_kmh', { color: '#666', unit: ' km/h', decimals: 1 });
         drawLineChart(chartContainers.Hum, filtered, 'humidity_pct', { color: '#1F6FA8', unit: ' %', decimals: 0 });
       }
 
@@ -1063,6 +1134,7 @@
       rangeToEl.addEventListener('change', applyCustomRange);
 
       renderCharts();
+      renderLast10Table(days);
       renderComparisonTable(days, latest._date);
       renderClimatologyTable(days, latest._date);
 
@@ -1087,7 +1159,48 @@
         document.getElementById(id).innerHTML = '<div class="chart-empty">Konnte Daten nicht laden: ' + err.message + '</div>';
       });
       document.getElementById('comparisonBody').innerHTML = '<tr><td colspan="9" class="error">Konnte Daten nicht laden: ' + err.message + '</td></tr>';
+      document.getElementById('last10Body').innerHTML = '<tr><td class="error">Konnte Daten nicht laden: ' + err.message + '</td></tr>';
       document.getElementById('historyBody').innerHTML = '<tr><td colspan="7" class="error">Konnte Daten nicht laden: ' + err.message + '</td></tr>';
+    }
+  }
+
+  async function initCurrent(){
+    try {
+      const resp = await fetch(HOURLY_DATA_URL, { cache: 'no-store' });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const rows = await resp.json();
+      if (!rows.length) throw new Error('Keine Stundenwerte vorhanden.');
+
+      const hourly = rows.map(function(r){ return Object.assign({}, r, { _date: new Date(r.obs_datetime) }); });
+      const latestHour = hourly[hourly.length - 1];
+      const todayISO = localISODate(new Date());
+
+      const last24 = hourly.slice(-24);
+      const precip24 = last24.reduce(function(sum, r){ return sum + (r.precip_mm || 0); }, 0);
+      const sun24 = last24.reduce(function(sum, r){ return sum + (r.sunshine_min || 0); }, 0) / 60;
+      const windVals24 = last24.map(function(r){ return r.wind_mean_kmh; }).filter(function(v){ return v != null; });
+      const windMean24 = windVals24.length ? windVals24.reduce(function(a,b){return a+b;},0) / windVals24.length : null;
+      const windMaxVals24 = last24.map(function(r){ return r.wind_max_kmh; }).filter(function(v){ return v != null; });
+      const windMax24 = windMaxVals24.length ? Math.max.apply(null, windMaxVals24) : null;
+
+      const todayRows = hourly.filter(function(r){ return localISODate(r._date) === todayISO; });
+      const precipToday = todayRows.reduce(function(sum, r){ return sum + (r.precip_mm || 0); }, 0);
+      const sunToday = todayRows.reduce(function(sum, r){ return sum + (r.sunshine_min || 0); }, 0) / 60;
+
+      setSimpleCard('curTemp', latestHour.temp_mean_c != null ? fmt1(latestHour.temp_mean_c) + ' °C' : null);
+      setSimpleCard('curPrecip24', fmt1(precip24) + ' mm');
+      setSimpleCard('curPrecipToday', fmt1(precipToday) + ' mm');
+      setSimpleCard('curSun24', fmt1(sun24) + ' h');
+      setSimpleCard('curSunToday', fmt1(sunToday) + ' h');
+      setSimpleCard('curWind24', (windMean24 != null ? fmt1(windMean24) : '—') + ' / ' + (windMax24 != null ? fmt1(windMax24) : '—') + ' km/h');
+
+      drawLineChart(document.getElementById('chart48h'), hourly, 'temp_mean_c', { color: '#E30613', unit: '°C', decimals: 1, showTime: true });
+
+    } catch (err) {
+      document.getElementById('chart48h').innerHTML = '<div class="chart-empty">Konnte Stundenwerte nicht laden: ' + err.message + '</div>';
+      ['curTemp','curPrecip24','curPrecipToday','curSun24','curSunToday','curWind24'].forEach(function(id){
+        setSimpleCard(id, null);
+      });
     }
   }
 
@@ -1132,9 +1245,10 @@
     const metaEl = document.getElementById('meta' + prefix);
     const deltaEl = document.getElementById('delta' + prefix);
     const cardEl = document.getElementById('card' + prefix);
+    const wtempEl = document.getElementById('wtemp' + prefix);
 
     const points = readings
-      .map(function(r){ return { v: r[key], date: r._date }; })
+      .map(function(r){ return { v: r[key], date: r._date, wtemp: r.water_temp_c }; })
       .filter(function(p){ return p.v != null; });
 
     if (points.length === 0) {
@@ -1142,6 +1256,7 @@
       minValEl.textContent = '—'; maxValEl.textContent = '—';
       metaEl.textContent = 'Noch keine Daten vorhanden.';
       deltaEl.textContent = '';
+      if (wtempEl) wtempEl.textContent = '';
       return null;
     }
 
@@ -1181,12 +1296,16 @@
     metaEl.innerHTML = 'Stand ' + fmtHydroDateTime(current.date) + ' Uhr' +
       (isStale ? '<br><span class="stale-badge">⚠ Daten veraltet</span>' : '');
 
+    if (wtempEl) {
+      wtempEl.textContent = current.wtemp != null ? ('Wassertemp. ' + fmt1(current.wtemp) + ' °C') : '';
+    }
+
     return current.date;
   }
 
   async function initHydro(){
     const stations = {
-      Bodensee:  { stationId: '2043', key: 'water_level_m', unit: ' m',    decimals: 2, color: '#1F8A6E', chartId: 'chartBodensee', compareLabel: 'Bodensee — Pegel' },
+      Bodensee:  { stationId: '2043', key: 'water_level_m', unit: ' m',    decimals: 2, color: '#1e7a34', chartId: 'chartBodensee', compareLabel: 'Bodensee — Pegel' },
       Rhein:     { stationId: '2288', key: 'discharge_m3s', unit: ' m³/s', decimals: 1, color: '#1F6FA8', chartId: 'chartRhein',    compareLabel: 'Rhein — Abfluss' },
       Glatt:     { stationId: '2415', key: 'discharge_m3s', unit: ' m³/s', decimals: 2, color: '#8A5CC0', chartId: 'chartGlatt',    compareLabel: 'Glatt — Abfluss' }
     };
@@ -1240,6 +1359,7 @@
     table.hidden = expanded;
   });
 
+  initCurrent();
   init().then(initHydro);
 </script>
 
