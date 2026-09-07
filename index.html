@@ -3,187 +3,1245 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Munotstadt Meteo</title>
+<title>Meteo Data</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root{
-    --red:#E30613;
-    --ink:#14181c;
-    --grey-line:#dde1e4;
-    --grey-mid:#6b7480;
-    --bg:#fafbfc;
-    --card:#ffffff;
-    --max-width:1200px;
-    --font-display:'Space Grotesk',sans-serif;
-    --font-mono:'IBM Plex Mono',monospace;
-    --font-body:'Inter',sans-serif;
+    --bg: #FFFFFF;
+    --panel: #F7F8FA;
+    --line: #E3E6EA;
+    --text: #1A1D22;
+    --muted: #767E8A;
+    --accent: #E30613;
+    --gain: #1F8A6E;
+    --loss: #C0293D;
+    --warn: #C2703D;
+    --grey-100: #F4F4F4;
+    --radius: 6px;
   }
-  *{box-sizing:border-box;}
-  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);}
-  a{color:inherit;}
-  .topbar{border-bottom:1px solid var(--grey-line);background:var(--card);}
-  .topbar-inner{max-width:var(--max-width);margin:0 auto;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;}
-  .brand{font-family:var(--font-display);font-weight:700;font-size:1.15rem;text-decoration:none;}
-  .brand span{color:var(--red);}
-  .nav{display:flex;gap:24px;font-size:0.9rem;}
-  .nav a{text-decoration:none;color:var(--grey-mid);}
-  .nav a.active{color:var(--ink);font-weight:500;}
-  main{max-width:var(--max-width);margin:0 auto;padding:32px 24px 64px;}
-  h1{font-family:var(--font-display);font-weight:700;font-size:2rem;margin:0 0 4px;}
-  .stand-badge{font-family:var(--font-mono);font-size:0.78rem;color:var(--grey-mid);margin:0 0 32px;}
-  .section-title{font-family:var(--font-display);font-weight:500;font-size:1.05rem;margin:40px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--grey-line);color:var(--ink);}
-  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;}
-  .card{background:var(--card);border:1px solid var(--grey-line);border-radius:6px;padding:16px 18px;}
-  .card .label{font-size:0.78rem;color:var(--grey-mid);margin-bottom:6px;}
-  .card .value{font-family:var(--font-display);font-size:1.6rem;font-weight:700;}
-  .card .unit{font-size:0.9rem;font-weight:400;color:var(--grey-mid);}
-  .hydro-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;}
-  .hydro-card{background:var(--card);border:1px solid var(--grey-line);border-radius:6px;padding:18px 20px;}
-  .hydro-card h3{font-family:var(--font-display);margin:0 0 2px;font-size:1.05rem;}
-  .hydro-card .place{font-size:0.82rem;color:var(--grey-mid);margin-bottom:14px;}
-  .hydro-row{display:flex;justify-content:space-between;font-size:0.88rem;padding:6px 0;border-top:1px solid var(--grey-line);}
-  .hydro-row:first-of-type{border-top:none;}
-  .hydro-row .v{font-family:var(--font-mono);}
-  canvas{width:100%;height:220px;display:block;background:var(--card);border:1px solid var(--grey-line);border-radius:6px;}
-  .muted{color:var(--grey-mid);font-size:0.85rem;}
-  footer{max-width:var(--max-width);margin:0 auto;padding:24px;color:var(--grey-mid);font-size:0.78rem;border-top:1px solid var(--grey-line);}
+  * { box-sizing: border-box; }
+  body{
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+    padding: 0 0 80px;
+  }
+  header.topbar{
+    width: 100%; box-sizing: border-box;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px; border-bottom: 2px solid var(--text);
+    max-width: 1200px; margin: 0 auto;
+  }
+  header.topbar .brand{ font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 18px; }
+  header.topbar .brand span{ color: var(--accent); }
+  nav.tabs{ display: flex; gap: 4px; }
+  nav.tabs a{
+    text-decoration: none; color: var(--text); font-size: 13px; font-weight: 500;
+    padding: 7px 12px; border-radius: var(--radius); font-family: 'Inter', sans-serif;
+  }
+  nav.tabs a.active, nav.tabs a:hover{ background: var(--grey-100); }
+
+  main.detail-main{ width: 100%; max-width: 1200px; padding: 32px 20px 0; }
+  .detail{ width: 100%; max-width: 1200px; }
+
+  .eyebrow{
+    display: flex; align-items: center; justify-content: flex-end;
+    padding-bottom: 18px; border-bottom: 2px solid var(--accent);
+  }
+  .brand{ display: flex; align-items: baseline; gap: 10px; }
+  .brand h1{
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px;
+    letter-spacing: 0.02em; margin: 0; text-transform: uppercase;
+  }
+  .status{
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--muted);
+  }
+  .dot{
+    width: 7px; height: 7px; border-radius: 50%; background: var(--gain);
+    box-shadow: 0 0 0 3px rgba(31,138,110,0.15); animation: pulse 2.4s ease-in-out infinite;
+  }
+  .dot.stale{ background: var(--muted); box-shadow: none; animation: none; }
+  @media (prefers-reduced-motion: reduce){ .dot{ animation: none; } }
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:0.45;} }
+
+  table{ width: 100%; border-collapse: collapse; margin-top: 4px; }
+  thead th{
+    text-align: left; font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 500;
+    padding: 14px 10px 10px; border-bottom: 1px solid var(--line);
+  }
+  thead th.num{ text-align: right; }
+  tbody td{ padding: 12px 10px; border-bottom: 1px solid var(--line); font-size: 14px; vertical-align: middle; }
+  .price, .time{ font-family: 'IBM Plex Mono', monospace; text-align: right; color: var(--text); white-space: nowrap; }
+  .time{ color: var(--muted); font-size: 13px; text-align: left; }
+  .name{ font-weight: 500; }
+  .chg{ font-family: 'IBM Plex Mono', monospace; text-align: right; white-space: nowrap; font-size: 13px; }
+
+  .table-scroll{
+    overflow-x: scroll; -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin; scrollbar-color: var(--line) transparent;
+    margin-top: 4px;
+  }
+  .table-scroll::-webkit-scrollbar{ height: 8px; }
+  .table-scroll::-webkit-scrollbar-track{ background: var(--panel); }
+  .table-scroll::-webkit-scrollbar-thumb{ background: var(--line); border-radius: 4px; }
+  .table-scroll table{ margin-top: 0; }
+  .table-scroll th:first-child, .table-scroll td:first-child{
+    position: sticky; left: 0; background: var(--bg); z-index: 1;
+    box-shadow: 1px 0 0 var(--line);
+  }
+  .price.current{ font-weight: 700; color: var(--text); }
+  .chg.up{ color: var(--gain); }
+  .chg.down{ color: var(--loss); }
+  .chg.flat{ color: var(--muted); }
+  .empty, .error{
+    padding: 40px 10px; text-align: center; color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace; font-size: 13px;
+  }
+  .error{ color: var(--loss); }
+
+  .detail-header{
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding-bottom: 18px; border-bottom: 1px solid var(--line);
+  }
+  .detail-header h2{ font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px; margin: 0; }
+  .stand-badge{
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500;
+    color: var(--muted); vertical-align: middle; margin-left: 4px;
+  }
+  .detail-returns{ display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+  .return-box{
+    display: flex; flex-direction: column; gap: 4px;
+    padding: 10px 14px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--radius); min-width: 108px; flex: 1 1 108px;
+  }
+  .return-label{
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .return-value{ font-family: 'IBM Plex Mono', monospace; font-size: 20px; font-weight: 600; }
+  .return-value.up{ color: var(--gain); }
+  .return-value.down{ color: var(--loss); }
+  .return-value.flat{ color: var(--text); }
+  .return-abs{ font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); }
+  .return-abs.up{ color: var(--gain); }
+  .return-abs.down{ color: var(--loss); }
+  .detail-meta{ font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--muted); margin-top: 16px; }
+
+  .section-divider{ border: none; border-top: 1px solid var(--line); margin: 36px 0; }
+  .section-heading{
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 18px;
+    margin: 0 0 4px;
+  }
+
+  .range-row{
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 16px;
+  }
+  .range-btn{
+    background: none; border: 1px solid var(--line); color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px; padding: 6px 12px;
+    border-radius: var(--radius); cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+  }
+  .range-btn:hover{ border-color: var(--muted); color: var(--text); }
+  .range-btn.active{ background: var(--text); border-color: var(--text); color: var(--bg); font-weight: 600; }
+  .range-btn:focus-visible{ outline: 2px solid var(--accent); outline-offset: 2px; }
+  .range-sep{ width: 1px; height: 18px; background: var(--line); margin: 0 2px; }
+  .custom-range{ display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .custom-range label{ font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--muted); }
+  .custom-range input[type="date"]{
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text);
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 5px 8px;
+  }
+  .custom-range input[type="date"]:focus-visible{ outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  .history-title{
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--accent); margin: 32px 0 6px;
+  }
+  .collapsible-toggle{
+    display: flex; align-items: center; gap: 6px;
+    background: none; border: none; padding: 0; margin: 32px 0 6px;
+    cursor: pointer; width: 100%; text-align: left;
+  }
+  .collapsible-toggle:hover .collapsible-arrow{ color: var(--text); }
+  .collapsible-toggle:focus-visible{ outline: 2px solid var(--accent); outline-offset: 2px; }
+  .collapsible-arrow{
+    display: inline-block; font-size: 9px; color: var(--muted);
+    transition: transform 0.15s ease, color 0.15s ease;
+  }
+  .collapsible-toggle[aria-expanded="true"] .collapsible-arrow{ transform: rotate(90deg); }
+
+  .chart-wrap{
+    margin: 0 0 8px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 20px 16px 12px;
+  }
+  .chart-wrap svg{ display: block; width: 100%; height: auto; }
+  .chart-hit-area{ cursor: pointer; touch-action: pan-y; }
+  .chart-tooltip-g .tooltip-bg{ opacity: 0.95; }
+  .chart-tooltip-g .tooltip-line{ pointer-events: none; }
+  .chart-tooltip-g .tooltip-dot{ pointer-events: none; }
+  .chart-tooltip-g .tooltip-text{ pointer-events: none; }
+  .chart-empty{ padding: 40px 10px; text-align: center; color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 13px; }
+  .chart-readout{
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--muted);
+    margin: 6px 2px 0; min-height: 16px;
+  }
+  .chart-readout.active{ color: var(--text); font-weight: 600; }
+
+  .footer{
+    margin-top: 22px; display: flex; align-items: center; justify-content: space-between;
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--muted); flex-wrap: wrap; gap: 6px;
+  }
+  .footer-note{
+    margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line);
+    font-family: 'Inter', sans-serif; font-size: 12px; line-height: 1.5; color: var(--muted);
+  }
+
+  .hydro-cards{ display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+  .hydro-section-header{
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin: 40px 0 16px; padding-bottom: 14px; border-bottom: 2px solid var(--accent);
+  }
+  .hydro-section-header h2{ font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px; margin: 0; }
+
+  .hydro-card{
+    flex: 1 1 170px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 14px 16px 16px; display: flex; flex-direction: column; align-items: center;
+  }
+  .hydro-card-head{ width: 100%; display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+  .hydro-card-label{
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .hydro-card-delta{ font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .hydro-card-delta.up{ color: var(--gain); }
+  .hydro-card-delta.down{ color: var(--loss); }
+  .hydro-card-delta.flat{ color: var(--muted); }
+
+  .vbar-max-label, .vbar-min-label{
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; color: var(--text);
+    white-space: nowrap;
+  }
+  .vbar-track-wrap{ position: relative; width: 12px; height: 140px; margin: 6px 0; }
+  .vbar-track{
+    position: absolute; left: 0; top: 0; width: 12px; height: 100%; border-radius: 6px;
+    background: linear-gradient(to top, var(--line), var(--station-color, var(--text)));
+  }
+  .vbar-marker{
+    position: absolute; left: 50%; bottom: 0%; transform: translate(-50%, 50%);
+    display: flex; align-items: center; gap: 6px; white-space: nowrap;
+    transition: bottom 0.2s ease;
+  }
+  .vbar-marker::before{ content: ''; width: 18px; height: 2px; background: var(--text); display: block; flex-shrink: 0; }
+  .vbar-marker-value{
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 700;
+    background: var(--text); color: var(--bg); padding: 2px 6px; border-radius: 3px;
+  }
+  .hydro-card-meta{ font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); margin-top: 12px; text-align: center; }
+  .hydro-card.stale{ border-color: var(--warn); }
+  .stale-badge{
+    display: inline-block; font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.04em; color: #fff; background: var(--warn);
+    padding: 2px 6px; border-radius: 3px; margin-top: 4px;
+  }
+  .hydro-caption{
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted);
+    margin-top: 10px;
+  }
+
+  @media (max-width: 560px){
+    .return-value{ font-size: 17px; }
+    #historyTable thead th:nth-child(6), #historyTable tbody td:nth-child(6),
+    #historyTable thead th:nth-child(7), #historyTable tbody td:nth-child(7) { display: none; }
+    #comparisonTable thead th:nth-child(4), #comparisonTable tbody td:nth-child(4),
+    #comparisonTable thead th:nth-child(5), #comparisonTable tbody td:nth-child(5),
+    #comparisonTable thead th:nth-child(8), #comparisonTable tbody td:nth-child(8),
+    #comparisonTable thead th:nth-child(9), #comparisonTable tbody td:nth-child(9) { display: none; }
+  }
 </style>
 </head>
 <body>
 
-<div class="topbar">
-  <div class="topbar-inner">
-    <a class="brand" href="/">Munotstadt <span>Meteo</span></a>
-    <nav class="nav">
-      <a href="/" class="active">Dashboard</a>
-      <a href="/sommer.html">Sommervergleich</a>
-    </nav>
+<header class="topbar">
+  <div class="brand">Munotstadt <span>Meteo</span></div>
+  <nav class="tabs">
+    <a href="index.html" class="active">Übersicht</a>
+    <a href="sommer.html">Sommervergleich</a>
+  </nav>
+</header>
+
+<main class="detail-main">
+<div class="detail" id="detailView">
+  <div class="eyebrow">
+    <div class="status">
+      <span class="dot" id="statusDot"></span>
+      <span id="statusText">connecting…</span>
+    </div>
+  </div>
+
+  <div class="detail-header">
+    <h2>Zürich-Kloten</h2>
+    <span class="stand-badge" id="standBadge">—</span>
+  </div>
+
+  <div class="detail-returns" id="detailReturns">
+    <div class="return-box"><span class="return-label">Temp. Mittel</span><span class="return-value" id="valTempMean">—</span><span class="return-abs" id="valTempMeanAbs"></span></div>
+    <div class="return-box"><span class="return-label">Temp. Min</span><span class="return-value" id="valTempMin">—</span><span class="return-abs" id="valTempMinAbs"></span></div>
+    <div class="return-box"><span class="return-label">Temp. Max</span><span class="return-value" id="valTempMax">—</span><span class="return-abs" id="valTempMaxAbs"></span></div>
+    <div class="return-box"><span class="return-label">Niederschlag</span><span class="return-value" id="valPrecip">—</span><span class="return-abs" id="valPrecipAbs"></span></div>
+    <div class="return-box"><span class="return-label">Sonnenstunden</span><span class="return-value" id="valSun">—</span><span class="return-abs" id="valSunAbs"></span></div>
+    <div class="return-box"><span class="return-label">Globalstrahlung</span><span class="return-value" id="valRad">—</span><span class="return-abs" id="valRadAbs"></span></div>
+    <div class="return-box"><span class="return-label">Wind Mittel</span><span class="return-value" id="valWind">—</span><span class="return-abs" id="valWindAbs"></span></div>
+    <div class="return-box"><span class="return-label">Böenspitze</span><span class="return-value" id="valWindMax">—</span><span class="return-abs" id="valWindMaxAbs"></span></div>
+    <div class="return-box"><span class="return-label">Luftfeuchtigkeit</span><span class="return-value" id="valHum">—</span><span class="return-abs" id="valHumAbs"></span></div>
+  </div>
+
+  <div class="hydro-section-header">
+    <h2>Hydrodaten</h2>
+    <span class="stand-badge" id="hydroStandBadge">—</span>
+  </div>
+
+  <div class="hydro-cards" id="hydroCards">
+    <div class="hydro-card" id="cardBodensee">
+      <div class="hydro-card-head">
+        <span class="hydro-card-label">Bodensee Berlingen — Pegel (m ü. M.)</span>
+        <span class="hydro-card-delta" id="deltaBodensee"></span>
+      </div>
+      <span class="vbar-max-label" id="maxBodensee">—</span>
+      <div class="vbar-track-wrap">
+        <div class="vbar-track" id="trackBodensee"></div>
+        <div class="vbar-marker" id="markerBodensee"><span class="vbar-marker-value" id="markerBodenseeValue">—</span></div>
+      </div>
+      <span class="vbar-min-label" id="minBodensee">—</span>
+      <div class="hydro-card-meta" id="metaBodensee"></div>
+    </div>
+
+    <div class="hydro-card" id="cardRhein">
+      <div class="hydro-card-head">
+        <span class="hydro-card-label">Rhein Neuhausen — Abfluss (m³/s)</span>
+        <span class="hydro-card-delta" id="deltaRhein"></span>
+      </div>
+      <span class="vbar-max-label" id="maxRhein">—</span>
+      <div class="vbar-track-wrap">
+        <div class="vbar-track" id="trackRhein"></div>
+        <div class="vbar-marker" id="markerRhein"><span class="vbar-marker-value" id="markerRheinValue">—</span></div>
+      </div>
+      <span class="vbar-min-label" id="minRhein">—</span>
+      <div class="hydro-card-meta" id="metaRhein"></div>
+    </div>
+
+    <div class="hydro-card" id="cardGlatt">
+      <div class="hydro-card-head">
+        <span class="hydro-card-label">Glatt Rheinsfelden — Abfluss (m³/s)</span>
+        <span class="hydro-card-delta" id="deltaGlatt"></span>
+      </div>
+      <span class="vbar-max-label" id="maxGlatt">—</span>
+      <div class="vbar-track-wrap">
+        <div class="vbar-track" id="trackGlatt"></div>
+        <div class="vbar-marker" id="markerGlatt"><span class="vbar-marker-value" id="markerGlattValue">—</span></div>
+      </div>
+      <span class="vbar-min-label" id="minGlatt">—</span>
+      <div class="hydro-card-meta" id="metaGlatt"></div>
+    </div>
+  </div>
+  <div class="hydro-caption">Min/Max jeweils seit Beginn der Aufzeichnung.</div>
+
+  <hr class="section-divider">
+
+  <div class="history-title">Vergleich — Tagesdurchschnitte</div>
+  <div class="table-scroll">
+    <table id="comparisonTable">
+      <thead>
+        <tr>
+          <th>Kennzahl</th>
+          <th class="num">Ø 7 Tage</th>
+          <th class="num">Δ Vorwoche</th>
+          <th class="num">Ø Monat</th>
+          <th class="num">Δ Vorjahr</th>
+          <th class="num">Ø YTD</th>
+          <th class="num">Δ Vorjahr</th>
+          <th class="num">Ø 360 Tage</th>
+          <th class="num">Δ P360 Tage</th>
+        </tr>
+      </thead>
+      <tbody id="comparisonBody">
+        <tr><td colspan="9" class="empty">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="history-title" style="margin-top:32px;">Vergleich — Monatsmittel (20-Jahres-Klimatologie)</div>
+  <div class="table-scroll">
+    <table id="climatologyTable">
+      <thead>
+        <tr>
+          <th>Kennzahl</th>
+          <th class="num">Ø 30 Tage</th>
+          <th class="num">Jan</th>
+          <th class="num">Feb</th>
+          <th class="num">Mär</th>
+          <th class="num">Apr</th>
+          <th class="num">Mai</th>
+          <th class="num">Jun</th>
+          <th class="num">Jul</th>
+          <th class="num">Aug</th>
+          <th class="num">Sep</th>
+          <th class="num">Okt</th>
+          <th class="num">Nov</th>
+          <th class="num">Dez</th>
+        </tr>
+      </thead>
+      <tbody id="climatologyBody">
+        <tr><td colspan="13" class="empty">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 class="section-heading" style="margin-top:36px;">Charts und Diagramme</h2>
+
+  <div class="range-row" id="rangeSelector">
+    <button type="button" class="range-btn active" data-range="30D">30 Tage</button>
+    <button type="button" class="range-btn" data-range="90D">90 Tage</button>
+    <button type="button" class="range-btn" data-range="12M">1 Jahr</button>
+    <button type="button" class="range-btn" data-range="3Y">3 Jahre</button>
+    <span class="range-sep"></span>
+    <div class="custom-range" id="customRange">
+      <label for="rangeFrom">Von</label>
+      <input type="date" id="rangeFrom">
+      <label for="rangeTo">Bis</label>
+      <input type="date" id="rangeTo">
+    </div>
+  </div>
+
+  <div class="history-title">Temperatur — Tagesmittel, Min/Max (°C)</div>
+  <div class="chart-wrap" id="chartTemp"><div class="chart-empty">Loading chart…</div></div>
+  <div class="chart-readout" id="chartTempReadout">Tippe auf einen Punkt für Details.</div>
+
+  <div class="history-title">Niederschlag — Tagessumme (mm)</div>
+  <div class="chart-wrap" id="chartPrecip"><div class="chart-empty">Loading chart…</div></div>
+  <div class="chart-readout" id="chartPrecipReadout">Tippe auf einen Punkt für Details.</div>
+
+  <div class="history-title">Sonnenstunden pro Tag (h)</div>
+  <div class="chart-wrap" id="chartSun"><div class="chart-empty">Loading chart…</div></div>
+  <div class="chart-readout" id="chartSunReadout">Tippe auf einen Punkt für Details.</div>
+
+  <div class="history-title">Globalstrahlung — Tagesmittel (W/m²)</div>
+  <div class="chart-wrap" id="chartRad"><div class="chart-empty">Loading chart…</div></div>
+  <div class="chart-readout" id="chartRadReadout">Tippe auf einen Punkt für Details.</div>
+
+  <div class="history-title">Wind — Tagesmittel, Böenspitze (km/h)</div>
+  <div class="chart-wrap" id="chartWind"><div class="chart-empty">Loading chart…</div></div>
+  <div class="chart-readout" id="chartWindReadout">Tippe auf einen Punkt für Details.</div>
+
+  <div class="history-title">Relative Luftfeuchtigkeit — Tagesmittel (%)</div>
+  <div class="chart-wrap" id="chartHum"><div class="chart-empty">Loading chart…</div></div>
+  <div class="chart-readout" id="chartHumReadout">Tippe auf einen Punkt für Details.</div>
+
+  <div class="history-title">Bodensee — Pegel Berlingen (m ü. M.)</div>
+  <div class="chart-wrap" id="chartBodensee"><div class="chart-empty">Loading chart…</div></div>
+  <div class="chart-readout" id="chartBodenseeReadout">Tippe auf einen Punkt für Details.</div>
+
+  <div class="history-title">Rhein — Abfluss Neuhausen (m³/s)</div>
+  <div class="chart-wrap" id="chartRhein"><div class="chart-empty">Loading chart…</div></div>
+  <div class="chart-readout" id="chartRheinReadout">Tippe auf einen Punkt für Details.</div>
+
+  <div class="history-title">Glatt — Abfluss Rheinsfelden (m³/s)</div>
+  <div class="chart-wrap" id="chartGlatt"><div class="chart-empty">Loading chart…</div></div>
+  <div class="chart-readout" id="chartGlattReadout">Tippe auf einen Punkt für Details.</div>
+
+  <button type="button" class="history-title collapsible-toggle" id="historyToggle" aria-expanded="false">
+    <span class="collapsible-arrow">▶</span> Letzte Messwerte Meteo
+  </button>
+  <table id="historyTable" class="collapsible-content" hidden>
+    <thead>
+      <tr>
+        <th>Datum</th>
+        <th class="num">Temp Ø</th>
+        <th class="num">Min/Max</th>
+        <th class="num">Regen</th>
+        <th class="num">Sonne</th>
+        <th class="num">Wind</th>
+        <th class="num">Feuchte</th>
+      </tr>
+    </thead>
+    <tbody id="historyBody">
+      <tr><td colspan="7" class="empty">Loading…</td></tr>
+    </tbody>
+  </table>
+
+  <div class="footer">
+    <span>Daten: MeteoSchweiz (KLO) · Source: MeteoSchweiz · Hydrodaten: Bundesamt für Umwelt BAFU (LINDAS) - Source: BAFU</span>
+    <span id="detailMeta">—</span>
+  </div>
+  <div class="footer-note">
+    Ein automatisierter Collector (GitHub Actions) ruft alle 2 Stunden die Rohdaten von MeteoSchweiz und BAFU ab und schreibt sie in die Cloud-Datenbank (Cloudflare D1). Diese Seite fragt die Daten live über Cloudflare Pages Functions ab — es gibt keinen statischen JSON-Export mehr. Die hier angezeigten Werte sind somit maximal 2 Stunden alt.
   </div>
 </div>
-
-<main>
-  <h1>Wetter &amp; Hydrologie</h1>
-  <p class="stand-badge" id="stand-badge">Stand: lädt…</p>
-
-  <div class="section-title">Aktuelle Werte — Zürich/Kloten</div>
-  <div class="cards" id="current-cards">
-    <div class="card"><div class="label">Lädt…</div></div>
-  </div>
-
-  <div class="section-title">Temperaturverlauf (30 Tage)</div>
-  <canvas id="temp-chart" width="1100" height="220"></canvas>
-
-  <div class="section-title">Hydrologie — BAFU</div>
-  <div class="hydro-grid" id="hydro-cards">
-    <div class="hydro-card">Lädt…</div>
-  </div>
 </main>
 
-<footer>
-  Daten: MeteoSchweiz (Station Zürich-Kloten) &amp; BAFU via LINDAS. Live aus Cloudflare D1.
-</footer>
-
 <script>
-async function fetchJSON(url) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`${url}: ${res.status}`);
-  return res.json();
-}
+  const DATA_URL = "/api/daily";
+  const HYDRO_DATA_URL = "/api/hydro";
 
-function fmt(n, digits = 1) {
-  return (n === null || n === undefined) ? "–" : Number(n).toFixed(digits);
-}
+  let comparisonRefDate = null;
 
-function drawLineChart(canvas, series, { min, max, color = "#E30613", label }) {
-  const ctx = canvas.getContext("2d");
-  const dpr = window.devicePixelRatio || 1;
-  const w = canvas.clientWidth, h = canvas.clientHeight;
-  canvas.width = w * dpr; canvas.height = h * dpr;
-  ctx.scale(dpr, dpr);
-  ctx.clearRect(0, 0, w, h);
+  function fmt1(n){ return n == null ? '—' : n.toLocaleString('de-CH', { minimumFractionDigits: 1, maximumFractionDigits: 1 }); }
+  function fmt0(n){ return n == null ? '—' : Math.round(n).toLocaleString('de-CH'); }
 
-  const pad = { l: 40, r: 12, t: 12, b: 24 };
-  const plotW = w - pad.l - pad.r, plotH = h - pad.t - pad.b;
-  const vals = series.map(p => p.v).filter(v => v !== null && v !== undefined);
-  const vMin = min ?? Math.min(...vals);
-  const vMax = max ?? Math.max(...vals);
-  const span = (vMax - vMin) || 1;
+  function fmtDate(iso){
+    const parts = iso.split('-');
+    return parts[2] + '.' + parts[1] + '.' + parts[0];
+  }
 
-  ctx.strokeStyle = "#dde1e4";
-  ctx.fillStyle = "#6b7480";
-  ctx.font = "11px IBM Plex Mono, monospace";
-  ctx.lineWidth = 1;
-  [vMin, (vMin + vMax) / 2, vMax].forEach((v, i) => {
-    const y = pad.t + plotH - ((v - vMin) / span) * plotH;
-    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
-    ctx.fillText(fmt(v, 0), 4, y + 4);
+  function parseISO(iso){
+    const parts = iso.split('-').map(Number);
+    return new Date(parts[0], parts[1] - 1, parts[2]);
+  }
+
+  function setCard(idPrefix, current, previous, unit, decimals){
+    const fmt = decimals === 0 ? fmt0 : fmt1;
+    const valEl = document.getElementById('val' + idPrefix);
+    const absEl = document.getElementById('val' + idPrefix + 'Abs');
+    valEl.textContent = current == null ? '—' : (fmt(current) + unit);
+    valEl.className = 'return-value flat';
+
+    if (current != null && previous != null) {
+      const diff = current - previous;
+      const dir = diff > 0.05 ? 'up' : diff < -0.05 ? 'down' : 'flat';
+      absEl.textContent = (diff > 0 ? '+' : '') + fmt(diff) + unit + ' vs. Vortag';
+      absEl.className = 'return-abs ' + dir;
+    } else {
+      absEl.textContent = '';
+    }
+  }
+
+  function filterByRange(days, range, customFrom, customTo){
+    if (range === 'CUSTOM') {
+      return days.filter(function(d){
+        return (!customFrom || d._date >= customFrom) && (!customTo || d._date <= customTo);
+      });
+    }
+    if (range === 'ALL') return days;
+    const now = new Date();
+    let cutoff;
+    if (range === '30D') { cutoff = new Date(now); cutoff.setDate(cutoff.getDate() - 30); }
+    else if (range === '90D') { cutoff = new Date(now); cutoff.setDate(cutoff.getDate() - 90); }
+    else if (range === '12M') { cutoff = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()); }
+    else if (range === '3Y') { cutoff = new Date(now.getFullYear() - 3, now.getMonth(), now.getDate()); }
+    else return days;
+    return days.filter(function(d){ return d._date >= cutoff; });
+  }
+
+  function fmtPointLabel(dt, v, opts, band){
+    const dd = String(dt.getDate()).padStart(2,'0');
+    const mm = String(dt.getMonth()+1).padStart(2,'0');
+    let label = dd + '.' + mm + '.' + dt.getFullYear();
+    if (opts.showTime) {
+      const hh = String(dt.getHours()).padStart(2,'0');
+      const mi = String(dt.getMinutes()).padStart(2,'0');
+      label += ' ' + hh + ':' + mi;
+    }
+    const decimals = opts.decimals != null ? opts.decimals : 1;
+    const valStr = v.toLocaleString('de-CH', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+    let out = label + ': ' + valStr + (opts.unit || '');
+    if (band) {
+      const loStr = band.lo.toLocaleString('de-CH', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+      const hiStr = band.hi.toLocaleString('de-CH', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+      out += ' (Min ' + loStr + (opts.unit || '') + ' / Max ' + hiStr + (opts.unit || '') + ')';
+    }
+    return out;
+  }
+
+  const chartRegistry = {};
+
+  function registerChart(container, points, pad, innerH){
+    if (!container.id) return;
+    chartRegistry[container.id] = { points: points, pad: pad, innerH: innerH };
+  }
+
+  function buildTooltipGroup(color){
+    return '<g class="chart-tooltip-g" style="display:none">' +
+      '<line class="tooltip-line" stroke="#767E8A" stroke-width="1" stroke-dasharray="3,3" />' +
+      '<circle class="tooltip-dot" r="4" fill="' + color + '" stroke="#fff" stroke-width="1.5" />' +
+      '<rect class="tooltip-bg" rx="3" fill="#1A1D22" />' +
+      '<text class="tooltip-text" fill="#fff" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="600" text-anchor="middle"></text>' +
+    '</g>';
+  }
+
+  function findNearestPoint(points, svgX){
+    let nearest = points[0], minDist = Math.abs(points[0].x - svgX);
+    for (let i = 1; i < points.length; i++) {
+      const dist = Math.abs(points[i].x - svgX);
+      if (dist < minDist) { minDist = dist; nearest = points[i]; }
+    }
+    return nearest;
+  }
+
+  function svgCoordsFromEvent(svg, clientX){
+    const rect = svg.getBoundingClientRect();
+    const vb = svg.viewBox.baseVal;
+    const ratio = vb.width / rect.width;
+    return vb.x + (clientX - rect.left) * ratio;
+  }
+
+  function showTooltip(svg, entry, point){
+    const g = svg.querySelector('.chart-tooltip-g');
+    if (!g) return;
+    const line = g.querySelector('.tooltip-line');
+    const dot = g.querySelector('.tooltip-dot');
+    const bg = g.querySelector('.tooltip-bg');
+    const text = g.querySelector('.tooltip-text');
+
+    const pointY = point.y != null ? point.y : (entry.pad.top + entry.innerH);
+    line.setAttribute('x1', point.x); line.setAttribute('x2', point.x);
+    line.setAttribute('y1', entry.pad.top); line.setAttribute('y2', entry.pad.top + entry.innerH);
+    dot.setAttribute('cx', point.x); dot.setAttribute('cy', pointY);
+
+    text.textContent = point.label;
+    const textWidth = point.label.length * 6.2 + 16;
+    let boxX = point.x - textWidth / 2;
+    boxX = Math.max(2, Math.min(798 - textWidth, boxX));
+    const boxY = Math.max(2, pointY - 28);
+    bg.setAttribute('x', boxX); bg.setAttribute('y', boxY);
+    bg.setAttribute('width', textWidth); bg.setAttribute('height', 20);
+    text.setAttribute('x', boxX + textWidth / 2); text.setAttribute('y', boxY + 14);
+
+    g.style.display = 'block';
+  }
+
+  function hideTooltip(svg){
+    const g = svg.querySelector('.chart-tooltip-g');
+    if (g) g.style.display = 'none';
+  }
+
+  function handlePointerAt(svg, clientX){
+    const container = svg.closest('.chart-wrap');
+    if (!container || !container.id) return;
+    const entry = chartRegistry[container.id];
+    if (!entry || !entry.points.length) return;
+
+    const svgX = svgCoordsFromEvent(svg, clientX);
+    const point = findNearestPoint(entry.points, svgX);
+    showTooltip(svg, entry, point);
+
+    const readout = document.getElementById(container.id + 'Readout');
+    if (readout) {
+      readout.textContent = point.label;
+      readout.classList.add('active');
+    }
+  }
+
+  document.addEventListener('pointermove', function(e){
+    const svg = e.target.closest('.chart-svg');
+    if (!svg) return;
+    handlePointerAt(svg, e.clientX);
+  });
+  document.addEventListener('pointerdown', function(e){
+    const svg = e.target.closest('.chart-svg');
+    if (!svg) return;
+    handlePointerAt(svg, e.clientX);
+  });
+  document.addEventListener('pointerleave', function(e){
+    const svg = e.target.closest('.chart-svg');
+    if (svg) hideTooltip(svg);
+  }, true);
+
+  function drawLineChart(container, days, seriesKey, opts) {
+    opts = opts || {};
+    const width = 800, height = 220, pad = { top: 14, right: 14, bottom: 26, left: 46 };
+    const innerW = width - pad.left - pad.right;
+    const innerH = height - pad.top - pad.bottom;
+
+    const points = days
+      .map(function(d){ return { dt: d._date, v: d[seriesKey] }; })
+      .filter(function(p){ return p.v != null; });
+
+    if (points.length < 2) {
+      container.innerHTML = '<div class="chart-empty">Nicht genug Datenpunkte.</div>';
+      return;
+    }
+
+    const bandMinKey = opts.bandMinKey, bandMaxKey = opts.bandMaxKey;
+    let bandPoints = null;
+    if (bandMinKey && bandMaxKey) {
+      bandPoints = days
+        .map(function(d){ return { dt: d._date, lo: d[bandMinKey], hi: d[bandMaxKey] }; })
+        .filter(function(p){ return p.lo != null && p.hi != null; });
+    }
+
+    const allVals = points.map(function(p){ return p.v; }).concat(
+      bandPoints ? bandPoints.reduce(function(acc, p){ return acc.concat([p.lo, p.hi]); }, []) : []
+    );
+    const minY = Math.min.apply(null, allVals);
+    const maxY = Math.max.apply(null, allVals);
+    const yPad = (maxY - minY) * 0.1 || Math.abs(maxY) * 0.05 || 1;
+    const yMin = minY - yPad, yMax = maxY + yPad;
+
+    const minX = points[0].dt.getTime();
+    const maxX = points[points.length - 1].dt.getTime();
+    const xSpan = (maxX - minX) || 1;
+
+    function xScale(t){ return pad.left + ((t - minX) / xSpan) * innerW; }
+    function yScale(v){ return pad.top + innerH - ((v - yMin) / (yMax - yMin)) * innerH; }
+
+    const firstVal = points[0].v, lastVal = points[points.length - 1].v;
+    const lineColor = opts.color || (lastVal >= firstVal ? '#1F8A6E' : '#C0293D');
+
+    let bandPath = '';
+    if (bandPoints && bandPoints.length >= 2) {
+      let hi = 'M', lo = '';
+      bandPoints.forEach(function(p, i){
+        const x = xScale(p.dt.getTime());
+        hi += (i === 0 ? '' : 'L') + x.toFixed(1) + ',' + yScale(p.hi).toFixed(1) + ' ';
+      });
+      for (let i = bandPoints.length - 1; i >= 0; i--) {
+        const p = bandPoints[i];
+        const x = xScale(p.dt.getTime());
+        lo += 'L' + x.toFixed(1) + ',' + yScale(p.lo).toFixed(1) + ' ';
+      }
+      bandPath = hi + lo + 'Z';
+    }
+
+    let d = '';
+    points.forEach(function(p, i){
+      const x = xScale(p.dt.getTime());
+      const y = yScale(p.v);
+      d += (i === 0 ? 'M' : 'L') + x.toFixed(1) + ',' + y.toFixed(1) + ' ';
+    });
+
+    const areaD = d + 'L' + xScale(maxX).toFixed(1) + ',' + (pad.top + innerH).toFixed(1) +
+                  ' L' + xScale(minX).toFixed(1) + ',' + (pad.top + innerH).toFixed(1) + ' Z';
+
+    let gridLines = '';
+    const steps = 4;
+    for (let i = 0; i <= steps; i++) {
+      const v = yMin + (i / steps) * (yMax - yMin);
+      const y = yScale(v);
+      gridLines += '<line x1="' + pad.left + '" y1="' + y.toFixed(1) + '" x2="' + (width - pad.right) + '" y2="' + y.toFixed(1) + '" stroke="#E3E6EA" stroke-width="1" />';
+      gridLines += '<text x="' + (pad.left - 8) + '" y="' + (y + 3).toFixed(1) + '" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10" fill="#767E8A">' + fmt1(v) + '</text>';
+    }
+
+    const midPoint = points[Math.floor(points.length / 2)];
+    const xLabelPoints = [points[0], midPoint, points[points.length - 1]];
+    const xLabels = xLabelPoints.map(function(p, i){
+      const x = xScale(p.dt.getTime());
+      const dd = String(p.dt.getDate()).padStart(2,'0');
+      const mm = String(p.dt.getMonth()+1).padStart(2,'0');
+      const label = dd + '.' + mm + '.' + p.dt.getFullYear();
+      const anchor = i === 0 ? 'start' : (i === xLabelPoints.length - 1 ? 'end' : 'middle');
+      return '<text x="' + x.toFixed(1) + '" y="' + (height - 8) + '" text-anchor="' + anchor + '" font-family="IBM Plex Mono, monospace" font-size="10" fill="#767E8A">' + label + '</text>';
+    }).join('');
+
+    const bandSvg = bandPath ? '<path d="' + bandPath + '" fill="' + lineColor + '" opacity="0.10" stroke="none" />' : '';
+
+    const bandByTime = {};
+    if (bandPoints) {
+      bandPoints.forEach(function(p){ bandByTime[p.dt.getTime()] = p; });
+    }
+
+    const registryPoints = points.map(function(p){
+      const band = bandByTime[p.dt.getTime()];
+      return { x: xScale(p.dt.getTime()), y: yScale(p.v), label: fmtPointLabel(p.dt, p.v, opts, band) };
+    });
+
+    const svg = '<svg viewBox="0 0 ' + width + ' ' + height + '" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Zeitreihe" class="chart-svg">' +
+        gridLines +
+        (!bandPath ? ('<path d="' + areaD + '" fill="' + lineColor + '" opacity="0.08" stroke="none" />') : bandSvg) +
+        '<path d="' + d.trim() + '" fill="none" stroke="' + lineColor + '" stroke-width="2" />' +
+        xLabels +
+        buildTooltipGroup(lineColor) +
+        '<rect x="0" y="0" width="' + width + '" height="' + height + '" fill="transparent" class="chart-hit-area" />' +
+      '</svg>';
+    container.innerHTML = svg;
+    registerChart(container, registryPoints, pad, innerH);
+  }
+
+  function drawBarChart(container, days, seriesKey, opts) {
+    opts = opts || {};
+    const width = 800, height = 220, pad = { top: 14, right: 14, bottom: 26, left: 46 };
+    const innerW = width - pad.left - pad.right;
+    const innerH = height - pad.top - pad.bottom;
+
+    const points = days
+      .map(function(d){ return { dt: d._date, v: d[seriesKey] }; })
+      .filter(function(p){ return p.v != null; });
+
+    if (points.length < 2) {
+      container.innerHTML = '<div class="chart-empty">Nicht genug Datenpunkte.</div>';
+      return;
+    }
+
+    const vals = points.map(function(p){ return p.v; });
+    const minY = Math.min(0, Math.min.apply(null, vals));
+    const maxY = Math.max.apply(null, vals);
+    const yPad = (maxY - minY) * 0.1 || Math.abs(maxY) * 0.05 || 1;
+    const yMin = minY, yMax = maxY + yPad;
+
+    const minX = points[0].dt.getTime();
+    const maxX = points[points.length - 1].dt.getTime();
+    const xSpan = (maxX - minX) || 1;
+
+    function xScale(t){ return pad.left + ((t - minX) / xSpan) * innerW; }
+    function yScale(v){ return pad.top + innerH - ((v - yMin) / (yMax - yMin || 1)) * innerH; }
+
+    const barColor = opts.color || '#1F6FA8';
+    const avgSpacing = xSpan / (points.length - 1);
+    const barW = Math.max(1, Math.min(14, (avgSpacing / xSpan) * innerW * 0.7));
+
+    const baseline = yScale(0);
+    const bars = points.map(function(p){
+      const x = xScale(p.dt.getTime());
+      const y = yScale(p.v);
+      const barTop = Math.min(y, baseline);
+      const barH = Math.max(1, Math.abs(baseline - y));
+      return '<rect x="' + (x - barW / 2).toFixed(1) + '" y="' + barTop.toFixed(1) + '" width="' + barW.toFixed(1) + '" height="' + barH.toFixed(1) + '" fill="' + barColor + '" opacity="0.75" style="pointer-events:none" />';
+    }).join('');
+
+    let gridLines = '';
+    const steps = 4;
+    for (let i = 0; i <= steps; i++) {
+      const v = yMin + (i / steps) * (yMax - yMin);
+      const y = yScale(v);
+      gridLines += '<line x1="' + pad.left + '" y1="' + y.toFixed(1) + '" x2="' + (width - pad.right) + '" y2="' + y.toFixed(1) + '" stroke="#E3E6EA" stroke-width="1" />';
+      gridLines += '<text x="' + (pad.left - 8) + '" y="' + (y + 3).toFixed(1) + '" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10" fill="#767E8A">' + fmt1(v) + '</text>';
+    }
+
+    const midPoint = points[Math.floor(points.length / 2)];
+    const xLabelPoints = [points[0], midPoint, points[points.length - 1]];
+    const xLabels = xLabelPoints.map(function(p, i){
+      const x = xScale(p.dt.getTime());
+      const dd = String(p.dt.getDate()).padStart(2,'0');
+      const mm = String(p.dt.getMonth()+1).padStart(2,'0');
+      const label = dd + '.' + mm + '.' + p.dt.getFullYear();
+      const anchor = i === 0 ? 'start' : (i === xLabelPoints.length - 1 ? 'end' : 'middle');
+      return '<text x="' + x.toFixed(1) + '" y="' + (height - 8) + '" text-anchor="' + anchor + '" font-family="IBM Plex Mono, monospace" font-size="10" fill="#767E8A">' + label + '</text>';
+    }).join('');
+
+    const registryPoints = points.map(function(p){
+      return { x: xScale(p.dt.getTime()), y: yScale(p.v), label: fmtPointLabel(p.dt, p.v, opts) };
+    });
+
+    const svg = '<svg viewBox="0 0 ' + width + ' ' + height + '" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Zeitreihe" class="chart-svg">' +
+        gridLines + bars + xLabels +
+        buildTooltipGroup(barColor) +
+        '<rect x="0" y="0" width="' + width + '" height="' + height + '" fill="transparent" class="chart-hit-area" />' +
+      '</svg>';
+    container.innerHTML = svg;
+    registerChart(container, registryPoints, pad, innerH);
+  }
+
+  function addDays(date, n){
+    const d = new Date(date);
+    d.setDate(d.getDate() + n);
+    return d;
+  }
+
+  function periodAvg(days, start, end, getValue){
+    const vals = [];
+    for (let i = 0; i < days.length; i++) {
+      const d = days[i];
+      if (d._date >= start && d._date <= end) {
+        const v = getValue(d);
+        if (v != null) vals.push(v);
+      }
+    }
+    if (vals.length === 0) return null;
+    return vals.reduce(function(a, b){ return a + b; }, 0) / vals.length;
+  }
+
+  function fmtCompVal(v, decimals){
+    return v == null ? '—' : v.toFixed(decimals);
+  }
+
+  function fmtCompDelta(current, reference, decimals){
+    if (current == null || reference == null) return { text: '—', dir: 'flat' };
+    const diff = current - reference;
+    const dir = diff > 0.05 ? 'up' : diff < -0.05 ? 'down' : 'flat';
+    return { text: (diff > 0 ? '+' : '') + diff.toFixed(decimals), dir: dir };
+  }
+
+  function unitLabel(label, unit){
+    return unit ? (label + ' (' + unit.trim() + ')') : label;
+  }
+
+  function buildComparisonRow(label, getValue, decimals, unit, dataset, refDate){
+    const last7Start = addDays(refDate, -6), last7End = refDate;
+    const prev7Start = addDays(refDate, -13), prev7End = addDays(refDate, -7);
+
+    const monthStart = new Date(refDate.getFullYear(), refDate.getMonth(), 1);
+    const monthEnd = refDate;
+    const monthPrevYearStart = new Date(refDate.getFullYear() - 1, refDate.getMonth(), 1);
+    const monthPrevYearEnd = new Date(refDate.getFullYear() - 1, refDate.getMonth(), refDate.getDate());
+
+    const ytdStart = new Date(refDate.getFullYear(), 0, 1);
+    const ytdEnd = refDate;
+    const ytdPrevYearStart = new Date(refDate.getFullYear() - 1, 0, 1);
+    const ytdPrevYearEnd = new Date(refDate.getFullYear() - 1, refDate.getMonth(), refDate.getDate());
+
+    const last360Start = addDays(refDate, -359), last360End = refDate;
+    const prior360Start = addDays(refDate, -719), prior360End = addDays(refDate, -360);
+
+    const w1 = periodAvg(dataset, last7Start, last7End, getValue);
+    const w0 = periodAvg(dataset, prev7Start, prev7End, getValue);
+    const mo1 = periodAvg(dataset, monthStart, monthEnd, getValue);
+    const mo0 = periodAvg(dataset, monthPrevYearStart, monthPrevYearEnd, getValue);
+    const y1 = periodAvg(dataset, ytdStart, ytdEnd, getValue);
+    const y0 = periodAvg(dataset, ytdPrevYearStart, ytdPrevYearEnd, getValue);
+    const p1 = periodAvg(dataset, last360Start, last360End, getValue);
+    const p0 = periodAvg(dataset, prior360Start, prior360End, getValue);
+
+    const wDelta = fmtCompDelta(w1, w0, decimals);
+    const moDelta = fmtCompDelta(mo1, mo0, decimals);
+    const yDelta = fmtCompDelta(y1, y0, decimals);
+    const pDelta = fmtCompDelta(p1, p0, decimals);
+
+    return '<tr>' +
+      '<td class="name">' + unitLabel(label, unit) + '</td>' +
+      '<td class="price">' + fmtCompVal(w1, decimals) + '</td>' +
+      '<td class="chg ' + wDelta.dir + '">' + wDelta.text + '</td>' +
+      '<td class="price">' + fmtCompVal(mo1, decimals) + '</td>' +
+      '<td class="chg ' + moDelta.dir + '">' + moDelta.text + '</td>' +
+      '<td class="price">' + fmtCompVal(y1, decimals) + '</td>' +
+      '<td class="chg ' + yDelta.dir + '">' + yDelta.text + '</td>' +
+      '<td class="price">' + fmtCompVal(p1, decimals) + '</td>' +
+      '<td class="chg ' + pDelta.dir + '">' + pDelta.text + '</td>' +
+    '</tr>';
+  }
+
+  function renderComparisonTable(days, refDate){
+    const metrics = [
+      { label: 'Temperatur', unit: '°C', decimals: 1, get: function(d){ return d.temp_mean_c; } },
+      { label: 'Sonnenschein', unit: 'h', decimals: 1, get: function(d){ return d.sunshine_min != null ? d.sunshine_min / 60 : null; } },
+      { label: 'Niederschlag', unit: 'mm', decimals: 1, get: function(d){ return d.precip_mm; } },
+      { label: 'Globalstrahlung', unit: 'W/m²', decimals: 0, get: function(d){ return d.radiation_wm2; } },
+    ];
+    document.getElementById('comparisonBody').innerHTML = metrics.map(function(m){
+      return buildComparisonRow(m.label, m.get, m.decimals, m.unit, days, refDate);
+    }).join('');
+  }
+
+  function monthAvg(days, monthIndex, getValue, yearFilter){
+    const vals = [];
+    for (let i = 0; i < days.length; i++) {
+      const d = days[i];
+      if (d._date.getMonth() === monthIndex && (!yearFilter || yearFilter(d._date))) {
+        const v = getValue(d);
+        if (v != null) vals.push(v);
+      }
+    }
+    if (vals.length === 0) return null;
+    return vals.reduce(function(a, b){ return a + b; }, 0) / vals.length;
+  }
+
+  function buildClimatologyRow(label, getValue, decimals, unit, days, refDate){
+    const last30Start = addDays(refDate, -29), last30End = refDate;
+    const last30Avg = periodAvg(days, last30Start, last30End, getValue);
+
+    let cells = '<td class="price current">' + fmtCompVal(last30Avg, decimals) + '</td>';
+    for (let m = 0; m < 12; m++) {
+      const avg = monthAvg(days, m, getValue);
+      cells += '<td class="price">' + fmtCompVal(avg, decimals) + '</td>';
+    }
+    return '<tr><td class="name">' + unitLabel(label, unit) + '</td>' + cells + '</tr>';
+  }
+
+  function renderClimatologyTable(days, refDate){
+    const metrics = [
+      { label: 'Temperatur', unit: '°C', decimals: 1, get: function(d){ return d.temp_mean_c; } },
+      { label: 'Sonnenschein', unit: 'h', decimals: 1, get: function(d){ return d.sunshine_min != null ? d.sunshine_min / 60 : null; } },
+      { label: 'Niederschlag', unit: 'mm', decimals: 1, get: function(d){ return d.precip_mm; } },
+      { label: 'Globalstrahlung', unit: 'W/m²', decimals: 0, get: function(d){ return d.radiation_wm2; } },
+    ];
+    document.getElementById('climatologyBody').innerHTML = metrics.map(function(m){
+      return buildClimatologyRow(m.label, m.get, m.decimals, m.unit, days, refDate);
+    }).join('');
+  }
+
+  function appendHydroComparisonRow(label, readings, key, decimals, unit, refDate){
+    const rowHtml = buildComparisonRow(label, function(r){ return r[key]; }, decimals, unit, readings, refDate);
+    document.getElementById('comparisonBody').insertAdjacentHTML('beforeend', rowHtml);
+  }
+
+  function appendHydroClimatologyRow(label, readings, key, decimals, unit, refDate){
+    const rowHtml = buildClimatologyRow(label, function(r){ return r[key]; }, decimals, unit, readings, refDate);
+    document.getElementById('climatologyBody').insertAdjacentHTML('beforeend', rowHtml);
+  }
+
+  async function init() {
+    const dot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
+
+    try {
+      const resp = await fetch(DATA_URL, { cache: 'no-store' });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const data = await resp.json();
+      if (!data.days || data.days.length === 0) throw new Error('Keine Tageswerte vorhanden.');
+
+      const days = data.days.map(function(d){ return Object.assign({}, d, { _date: parseISO(d.date) }); });
+      const latest = days[days.length - 1];
+      const prev = days.length >= 2 ? days[days.length - 2] : null;
+
+      dot.classList.remove('stale');
+      statusText.textContent = 'live';
+
+      setCard('TempMean', latest.temp_mean_c, prev ? prev.temp_mean_c : null, '°C', 1);
+      setCard('TempMin', latest.temp_min_c, prev ? prev.temp_min_c : null, '°C', 1);
+      setCard('TempMax', latest.temp_max_c, prev ? prev.temp_max_c : null, '°C', 1);
+      setCard('Precip', latest.precip_mm, prev ? prev.precip_mm : null, ' mm', 1);
+      setCard('Sun', latest.sunshine_min != null ? latest.sunshine_min / 60 : null,
+                     prev && prev.sunshine_min != null ? prev.sunshine_min / 60 : null, ' h', 1);
+      setCard('Rad', latest.radiation_wm2, prev ? prev.radiation_wm2 : null, ' W/m²', 0);
+      setCard('Wind', latest.wind_mean_kmh, prev ? prev.wind_mean_kmh : null, ' km/h', 1);
+      setCard('WindMax', latest.wind_max_kmh, prev ? prev.wind_max_kmh : null, ' km/h', 1);
+      setCard('Hum', latest.humidity_pct, prev ? prev.humidity_pct : null, ' %', 0);
+
+      document.getElementById('standBadge').textContent = 'Stand ' + fmtDate(latest.date);
+      document.getElementById('detailMeta').textContent =
+        'Quelle: MeteoSchweiz · ' + days.length + ' Tage im Archiv';
+
+      comparisonRefDate = latest._date;
+
+      let currentRange = '30D';
+      let customFrom = null, customTo = null;
+      const chartContainers = {
+        Temp: document.getElementById('chartTemp'),
+        Precip: document.getElementById('chartPrecip'),
+        Sun: document.getElementById('chartSun'),
+        Rad: document.getElementById('chartRad'),
+        Wind: document.getElementById('chartWind'),
+        Hum: document.getElementById('chartHum')
+      };
+
+      function renderCharts(){
+        const filtered = filterByRange(days, currentRange, customFrom, customTo);
+        drawLineChart(chartContainers.Temp, filtered, 'temp_mean_c', { bandMinKey: 'temp_min_c', bandMaxKey: 'temp_max_c', color: '#E30613', unit: '°C', decimals: 1 });
+        drawBarChart(chartContainers.Precip, filtered, 'precip_mm', { color: '#1F8A6E', unit: ' mm', decimals: 1 });
+        const withSunHours2 = filtered.map(function(d){ return Object.assign({}, d, { sunshine_h: d.sunshine_min != null ? d.sunshine_min / 60 : null }); });
+        drawBarChart(chartContainers.Sun, withSunHours2, 'sunshine_h', { color: '#C08A00', unit: ' h', decimals: 1 });
+        drawBarChart(chartContainers.Rad, filtered, 'radiation_wm2', { color: '#8A5CC0', unit: ' W/m²', decimals: 0 });
+        drawLineChart(chartContainers.Wind, filtered, 'wind_mean_kmh', { color: '#767E8A', unit: ' km/h', decimals: 1 });
+        drawLineChart(chartContainers.Hum, filtered, 'humidity_pct', { color: '#1F6FA8', unit: ' %', decimals: 0 });
+      }
+
+      document.querySelectorAll('#rangeSelector .range-btn').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          currentRange = btn.dataset.range;
+          customFrom = null; customTo = null;
+          document.getElementById('rangeFrom').value = '';
+          document.getElementById('rangeTo').value = '';
+          document.querySelectorAll('#rangeSelector .range-btn').forEach(function(b){ b.classList.toggle('active', b === btn); });
+          renderCharts();
+        });
+      });
+
+      const rangeFromEl = document.getElementById('rangeFrom');
+      const rangeToEl = document.getElementById('rangeTo');
+      const minDate = new Date(latest._date.getFullYear() - 20, latest._date.getMonth(), latest._date.getDate());
+      const minDateStr = minDate.toISOString().slice(0, 10);
+      const maxDateStr = latest.date;
+      [rangeFromEl, rangeToEl].forEach(function(el){
+        el.min = minDateStr;
+        el.max = maxDateStr;
+      });
+
+      function applyCustomRange(){
+        const fromVal = rangeFromEl.value, toVal = rangeToEl.value;
+        if (!fromVal && !toVal) return;
+        customFrom = fromVal ? parseISO(fromVal) : null;
+        customTo = toVal ? parseISO(toVal) : null;
+        currentRange = 'CUSTOM';
+        document.querySelectorAll('#rangeSelector .range-btn').forEach(function(b){ b.classList.remove('active'); });
+        renderCharts();
+      }
+      rangeFromEl.addEventListener('change', applyCustomRange);
+      rangeToEl.addEventListener('change', applyCustomRange);
+
+      renderCharts();
+      renderComparisonTable(days, latest._date);
+      renderClimatologyTable(days, latest._date);
+
+      const sortedDesc = days.slice().sort(function(a, b){ return b._date - a._date; }).slice(0, 30);
+      document.getElementById('historyBody').innerHTML = sortedDesc.map(function(d){
+        return '<tr>' +
+          '<td class="time">' + fmtDate(d.date) + '</td>' +
+          '<td class="price">' + fmt1(d.temp_mean_c) + '°C</td>' +
+          '<td class="price">' + fmt1(d.temp_min_c) + ' / ' + fmt1(d.temp_max_c) + '</td>' +
+          '<td class="price">' + fmt1(d.precip_mm) + ' mm</td>' +
+          '<td class="price">' + (d.sunshine_min != null ? fmt1(d.sunshine_min / 60) : '—') + ' h</td>' +
+          '<td class="price">' + fmt1(d.wind_mean_kmh) + ' km/h</td>' +
+          '<td class="price">' + fmt0(d.humidity_pct) + ' %</td>' +
+        '</tr>';
+      }).join('');
+
+    } catch (err) {
+      dot.classList.add('stale');
+      statusText.textContent = 'connection failed';
+      document.getElementById('detailMeta').textContent = 'Fehler beim Laden: ' + err.message;
+      ['chartTemp','chartPrecip','chartSun','chartRad','chartWind','chartHum'].forEach(function(id){
+        document.getElementById(id).innerHTML = '<div class="chart-empty">Konnte Daten nicht laden: ' + err.message + '</div>';
+      });
+      document.getElementById('comparisonBody').innerHTML = '<tr><td colspan="9" class="error">Konnte Daten nicht laden: ' + err.message + '</td></tr>';
+      document.getElementById('historyBody').innerHTML = '<tr><td colspan="7" class="error">Konnte Daten nicht laden: ' + err.message + '</td></tr>';
+    }
+  }
+
+  function parseISODateTime(iso){ return new Date(iso); }
+
+  function fmtHydroVal(v, decimals){
+    return v == null ? '—' : v.toLocaleString('de-CH', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+  }
+
+  function fmtHydroDateTime(date){
+    const dd = String(date.getDate()).padStart(2,'0');
+    const mm = String(date.getMonth()+1).padStart(2,'0');
+    const hh = String(date.getHours()).padStart(2,'0');
+    const mi = String(date.getMinutes()).padStart(2,'0');
+    return dd + '.' + mm + '.' + date.getFullYear() + ' ' + hh + ':' + mi;
+  }
+
+  function fmtHydroShortDate(date){
+    const dd = String(date.getDate()).padStart(2,'0');
+    const mm = String(date.getMonth()+1).padStart(2,'0');
+    return dd + '.' + mm + '.';
+  }
+
+  function findClosestToTime(points, target, toleranceMs){
+    let best = null, bestDiff = Infinity;
+    points.forEach(function(p){
+      const diff = Math.abs(p.date.getTime() - target.getTime());
+      if (diff < bestDiff) { bestDiff = diff; best = p; }
+    });
+    if (best && bestDiff <= toleranceMs) return best;
+    return null;
+  }
+
+  const STALE_THRESHOLD_MS = 6 * 3600 * 1000; // 6 Stunden
+
+  function renderVerticalBar(prefix, readings, key, decimals, unit, color) {
+    const track = document.getElementById('track' + prefix);
+    const marker = document.getElementById('marker' + prefix);
+    const markerValue = document.getElementById('marker' + prefix + 'Value');
+    const minValEl = document.getElementById('min' + prefix);
+    const maxValEl = document.getElementById('max' + prefix);
+    const metaEl = document.getElementById('meta' + prefix);
+    const deltaEl = document.getElementById('delta' + prefix);
+    const cardEl = document.getElementById('card' + prefix);
+
+    const points = readings
+      .map(function(r){ return { v: r[key], date: r._date }; })
+      .filter(function(p){ return p.v != null; });
+
+    if (points.length === 0) {
+      markerValue.textContent = '—';
+      minValEl.textContent = '—'; maxValEl.textContent = '—';
+      metaEl.textContent = 'Noch keine Daten vorhanden.';
+      deltaEl.textContent = '';
+      return null;
+    }
+
+    track.style.setProperty('--station-color', color);
+
+    let minPoint = points[0], maxPoint = points[0];
+    points.forEach(function(p){
+      if (p.v < minPoint.v) minPoint = p;
+      if (p.v > maxPoint.v) maxPoint = p;
+    });
+    const current = points[points.length - 1];
+
+    const span = maxPoint.v - minPoint.v;
+    const pct = span > 0 ? ((current.v - minPoint.v) / span) * 100 : 50;
+    const clampedPct = Math.max(0, Math.min(100, pct));
+
+    marker.style.bottom = clampedPct + '%';
+    markerValue.textContent = fmtHydroVal(current.v, decimals) + unit;
+
+    minValEl.textContent = fmtHydroVal(minPoint.v, decimals) + unit + ' (' + fmtHydroShortDate(minPoint.date) + ')';
+    maxValEl.textContent = fmtHydroVal(maxPoint.v, decimals) + unit + ' (' + fmtHydroShortDate(maxPoint.date) + ')';
+
+    const target = new Date(current.date.getTime() - 24 * 3600 * 1000);
+    const yesterday = findClosestToTime(points.slice(0, -1), target, 3 * 3600 * 1000);
+    if (yesterday) {
+      const diff = current.v - yesterday.v;
+      const dir = diff > 0.005 ? 'up' : diff < -0.005 ? 'down' : 'flat';
+      deltaEl.textContent = (diff > 0 ? '+' : '') + fmtHydroVal(diff, decimals) + unit + ' vs. Vortag';
+      deltaEl.className = 'hydro-card-delta ' + dir;
+    } else {
+      deltaEl.textContent = '';
+    }
+
+    const ageMs = Date.now() - current.date.getTime();
+    const isStale = ageMs > STALE_THRESHOLD_MS;
+    if (cardEl) cardEl.classList.toggle('stale', isStale);
+    metaEl.innerHTML = 'Stand ' + fmtHydroDateTime(current.date) + ' Uhr' +
+      (isStale ? '<br><span class="stale-badge">⚠ Daten veraltet</span>' : '');
+
+    return current.date;
+  }
+
+  async function initHydro(){
+    const stations = {
+      Bodensee:  { stationId: '2043', key: 'water_level_m', unit: ' m',    decimals: 2, color: '#1F8A6E', chartId: 'chartBodensee', compareLabel: 'Bodensee — Pegel' },
+      Rhein:     { stationId: '2288', key: 'discharge_m3s', unit: ' m³/s', decimals: 1, color: '#1F6FA8', chartId: 'chartRhein',    compareLabel: 'Rhein — Abfluss' },
+      Glatt:     { stationId: '2415', key: 'discharge_m3s', unit: ' m³/s', decimals: 2, color: '#8A5CC0', chartId: 'chartGlatt',    compareLabel: 'Glatt — Abfluss' }
+    };
+    const headerBadge = document.getElementById('hydroStandBadge');
+
+    try {
+      const resp = await fetch(HYDRO_DATA_URL, { cache: 'no-store' });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const data = await resp.json();
+
+      let latestOverall = null;
+      const refDate = comparisonRefDate || new Date();
+
+      Object.keys(stations).forEach(function(prefix){
+        const cfg = stations[prefix];
+        const station = data.stations ? data.stations[cfg.stationId] : null;
+        const readings = (station && station.readings) ? station.readings.map(function(r){
+          return Object.assign({}, r, { _date: parseISODateTime(r.time) });
+        }) : [];
+
+        const latestDate = renderVerticalBar(prefix, readings, cfg.key, cfg.decimals, cfg.unit, cfg.color);
+        if (latestDate && (!latestOverall || latestDate > latestOverall)) latestOverall = latestDate;
+
+        const chartEl = document.getElementById(cfg.chartId);
+        if (readings.length < 2) {
+          chartEl.innerHTML = '<div class="chart-empty">Noch keine Daten vorhanden.</div>';
+        } else {
+          drawLineChart(chartEl, readings, cfg.key, { color: cfg.color, unit: cfg.unit, decimals: cfg.decimals, showTime: true });
+        }
+
+        appendHydroComparisonRow(cfg.compareLabel, readings, cfg.key, cfg.decimals, cfg.unit, refDate);
+        appendHydroClimatologyRow(cfg.compareLabel, readings, cfg.key, cfg.decimals, cfg.unit, refDate);
+      });
+
+      headerBadge.textContent = latestOverall ? ('Stand ' + fmtHydroDateTime(latestOverall)) : '—';
+
+    } catch (err) {
+      headerBadge.textContent = '—';
+      Object.keys(stations).forEach(function(prefix){
+        document.getElementById('meta' + prefix).textContent = 'Konnte Hydrodaten nicht laden: ' + err.message;
+        document.getElementById(stations[prefix].chartId).innerHTML =
+          '<div class="chart-empty">Konnte Hydrodaten nicht laden: ' + err.message + '</div>';
+      });
+    }
+  }
+
+  document.getElementById('historyToggle').addEventListener('click', function(){
+    const table = document.getElementById('historyTable');
+    const expanded = this.getAttribute('aria-expanded') === 'true';
+    this.setAttribute('aria-expanded', String(!expanded));
+    table.hidden = expanded;
   });
 
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  series.forEach((p, i) => {
-    if (p.v === null || p.v === undefined) return;
-    const x = pad.l + (i / (series.length - 1)) * plotW;
-    const y = pad.t + plotH - ((p.v - vMin) / span) * plotH;
-    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-  });
-  ctx.stroke();
-
-  ctx.fillStyle = "#6b7480";
-  ctx.font = "11px IBM Plex Mono, monospace";
-  [0, Math.floor(series.length / 2), series.length - 1].forEach(i => {
-    const p = series[i]; if (!p) return;
-    const x = pad.l + (i / (series.length - 1)) * plotW;
-    ctx.fillText(p.label, Math.min(Math.max(x - 20, pad.l), w - 60), h - 4);
-  });
-}
-
-async function loadCurrent() {
-  const daily = await fetchJSON("/api/daily?days=30");
-  const latest = daily[daily.length - 1];
-  document.getElementById("stand-badge").textContent =
-    `Stand: ${latest.obs_date} · MeteoSchweiz KLO`;
-
-  document.getElementById("current-cards").innerHTML = `
-    <div class="card"><div class="label">Ø Temperatur</div><div class="value">${fmt(latest.temp_mean_c)}<span class="unit">°C</span></div></div>
-    <div class="card"><div class="label">Min / Max</div><div class="value">${fmt(latest.temp_min_c,0)}/${fmt(latest.temp_max_c,0)}<span class="unit">°C</span></div></div>
-    <div class="card"><div class="label">Niederschlag</div><div class="value">${fmt(latest.precip_mm)}<span class="unit">mm</span></div></div>
-    <div class="card"><div class="label">Sonnenschein</div><div class="value">${fmt(latest.sunshine_min,0)}<span class="unit">min</span></div></div>
-    <div class="card"><div class="label">Wind Ø / Böe</div><div class="value">${fmt(latest.wind_mean_kmh,0)}/${fmt(latest.wind_max_kmh,0)}<span class="unit">km/h</span></div></div>
-    <div class="card"><div class="label">Luftfeuchte</div><div class="value">${fmt(latest.humidity_pct,0)}<span class="unit">%</span></div></div>
-  `;
-
-  const series = daily.map(d => ({
-    v: d.temp_mean_c,
-    label: d.obs_date.slice(5),
-  }));
-  drawLineChart(document.getElementById("temp-chart"), series, { label: "Ø Temp °C" });
-}
-
-async function loadHydro() {
-  const stations = await fetchJSON("/api/hydro?days=30");
-  document.getElementById("hydro-cards").innerHTML = stations.map(s => `
-    <div class="hydro-card">
-      <h3>${s.name}</h3>
-      <div class="place">${s.place} · Station ${s.station_id}</div>
-      ${s.latest ? `
-        <div class="hydro-row"><span>Abfluss</span><span class="v">${fmt(s.latest.discharge_m3s)} m³/s</span></div>
-        <div class="hydro-row"><span>Pegel</span><span class="v">${fmt(s.latest.water_level_m,2)} m</span></div>
-        <div class="hydro-row"><span>Wassertemp.</span><span class="v">${fmt(s.latest.water_temp_c)} °C</span></div>
-        <div class="hydro-row"><span class="muted">Zeit</span><span class="v muted">${s.latest.reading_time.replace('T',' ').slice(0,16)}</span></div>
-      ` : `<p class="muted">Keine Daten</p>`}
-    </div>
-  `).join("");
-}
-
-loadCurrent().catch(err => {
-  document.getElementById("current-cards").innerHTML = `<div class="card">Fehler: ${err.message}</div>`;
-});
-loadHydro().catch(err => {
-  document.getElementById("hydro-cards").innerHTML = `<div class="hydro-card">Fehler: ${err.message}</div>`;
-});
+  init().then(initHydro);
 </script>
+
 </body>
 </html>
