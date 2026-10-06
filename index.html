@@ -277,7 +277,7 @@
     <span class="stand-badge" id="standBadge">—</span>
   </div>
 
-  <div class="history-title" style="margin-top:20px;">Aktuell</div>
+  <div class="history-title" style="margin-top:20px;">Aktuell <span class="stand-badge" id="curStand"></span></div>
   <div class="detail-returns" id="currentReturns">
     <div class="return-box"><span class="return-label">Temp. Aktuell</span><span class="return-value" id="curTemp">—</span></div>
     <div class="return-box"><span class="return-label">Niederschlag 24h</span><span class="return-value" id="curPrecip24">—</span></div>
@@ -496,7 +496,7 @@
     <span id="detailMeta">—</span>
   </div>
   <div class="footer-note">
-    Ein automatisierter Collector (GitHub Actions) ruft alle 2 Stunden die Rohdaten von MeteoSchweiz und BAFU ab und schreibt sie in Cloudflare D1. Diese Seite fragt die Daten live über Cloudflare Pages Functions ab. Die "Aktuell"-Werte basieren auf den stündlichen Messwerten, alle übrigen Auswertungen auf den Tageswerten.
+    Ein automatisierter Collector (GitHub Actions) ruft alle 2 Stunden die Rohdaten von MeteoSchweiz und BAFU ab und schreibt sie in Cloudflare D1. Diese Seite fragt die Daten live über Cloudflare Pages Functions ab. Die "Aktuell"-Werte, der 48h-Chart und die Tagesvergleiche (letzte 10 Tage, Ø 7 Tage, Vorwoche, Monat, YTD) basieren auf den 10-Minuten-Messwerten; Tage nach Ortszeit, nur vollständige Tage. Vorjahres- und 360-Tage-Vergleiche, Klimatologie und Charts basieren auf den Tageswerten.
   </div>
 </div>
 </main>
@@ -504,9 +504,13 @@
 <script>
   const DATA_URL = "/api/daily";
   const HYDRO_DATA_URL = "/api/hydro";
-  const HOURLY_DATA_URL = "/api/hourly?hours=48";
+  const FREQ_URL = "/api/frequently?hours=48";
+  const FREQ_DAILY_URL = "/api/frequently-daily";
+  const MIN_DAY_SAMPLES = 120; // von 144 Messungen à 10 Min; kleinere Tage gelten als unvollständig
 
   let comparisonRefDate = null;
+  let dailyDays = [];
+  let dailyLatest = null;
 
   function fmt1(n){ return n == null ? '—' : n.toLocaleString('de-CH', { minimumFractionDigits: 1, maximumFractionDigits: 1 }); }
   function fmt0(n){ return n == null ? '—' : Math.round(n).toLocaleString('de-CH'); }
@@ -524,6 +528,10 @@
   function parseISO(iso){
     const parts = iso.split('-').map(Number);
     return new Date(parts[0], parts[1] - 1, parts[2]);
+  }
+
+  function zrhISO(d){
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Zurich' }).format(d);
   }
 
   function localISODate(d){
@@ -766,7 +774,7 @@
       let label;
       if (opts.showTime) {
         const hh = String(p.dt.getHours()).padStart(2,'0');
-        label = dd + '.' + mm + ' ' + hh + ':00';
+        label = dd + '.' + mm + ' ' + hh + ':' + String(p.dt.getMinutes()).padStart(2,'0');
       } else {
         label = dd + '.' + mm + '.' + p.dt.getFullYear();
       }
@@ -906,7 +914,10 @@
     return unit ? (label + ' (' + unit.trim() + ')') : label;
   }
 
-  function buildComparisonRow(label, getValue, decimals, unit, dataset, refDate){
+  // freqDataset (optional): Tageswerte aus meteo_klo_frequently für 7 Tage, Vorwoche, Monat und YTD.
+  // Vorjahres- und 360-Tage-Vergleiche kommen weiterhin aus dataset (Tageswerte, lange Historie).
+  function buildComparisonRow(label, getValue, decimals, unit, dataset, refDate, freqDataset){
+    const cur = freqDataset || dataset;
     const last7Start = addDays(refDate, -6), last7End = refDate;
     const prev7Start = addDays(refDate, -13), prev7End = addDays(refDate, -7);
 
@@ -923,11 +934,11 @@
     const last360Start = addDays(refDate, -359), last360End = refDate;
     const prior360Start = addDays(refDate, -719), prior360End = addDays(refDate, -360);
 
-    const w1 = periodAvg(dataset, last7Start, last7End, getValue);
-    const w0 = periodAvg(dataset, prev7Start, prev7End, getValue);
-    const mo1 = periodAvg(dataset, monthStart, monthEnd, getValue);
+    const w1 = periodAvg(cur, last7Start, last7End, getValue);
+    const w0 = periodAvg(cur, prev7Start, prev7End, getValue);
+    const mo1 = periodAvg(cur, monthStart, monthEnd, getValue);
     const mo0 = periodAvg(dataset, monthPrevYearStart, monthPrevYearEnd, getValue);
-    const y1 = periodAvg(dataset, ytdStart, ytdEnd, getValue);
+    const y1 = periodAvg(cur, ytdStart, ytdEnd, getValue);
     const y0 = periodAvg(dataset, ytdPrevYearStart, ytdPrevYearEnd, getValue);
     const p1 = periodAvg(dataset, last360Start, last360End, getValue);
     const p0 = periodAvg(dataset, prior360Start, prior360End, getValue);
@@ -950,7 +961,7 @@
     '</tr>';
   }
 
-  function renderComparisonTable(days, refDate){
+  function renderComparisonTable(days, refDate, freqDays){
     const metrics = [
       { label: 'Temperatur', unit: '°C', decimals: 1, get: function(d){ return d.temp_mean_c; } },
       { label: 'Sonnenschein', unit: 'h', decimals: 1, get: function(d){ return d.sunshine_min != null ? d.sunshine_min / 60 : null; } },
@@ -958,7 +969,7 @@
       { label: 'Globalstrahlung', unit: 'W/m²', decimals: 0, get: function(d){ return d.radiation_wm2; } },
     ];
     document.getElementById('comparisonBody').innerHTML = metrics.map(function(m){
-      return buildComparisonRow(m.label, m.get, m.decimals, m.unit, days, refDate);
+      return buildComparisonRow(m.label, m.get, m.decimals, m.unit, days, refDate, freqDays);
     }).join('');
   }
 
@@ -1097,7 +1108,8 @@
       document.getElementById('detailMeta').textContent =
         'Quelle: MeteoSchweiz · ' + days.length + ' Tage im Archiv';
 
-      comparisonRefDate = latest._date;
+      dailyDays = days;
+      dailyLatest = latest;
       const todayISO = localISODate(new Date());
 
       renderYesterday(days, todayISO);
@@ -1158,8 +1170,6 @@
       rangeToEl.addEventListener('change', applyCustomRange);
 
       renderCharts();
-      renderLast10Table(days);
-      renderComparisonTable(days, latest._date);
       renderClimatologyTable(days, latest._date);
 
       const sortedDesc = days.slice().sort(function(a, b){ return b._date - a._date; }).slice(0, 30);
@@ -1182,24 +1192,34 @@
       ['chartTemp','chartPrecip','chartSun','chartRad','chartWind','chartHum'].forEach(function(id){
         document.getElementById(id).innerHTML = '<div class="chart-empty">Konnte Daten nicht laden: ' + err.message + '</div>';
       });
-      document.getElementById('comparisonBody').innerHTML = '<tr><td colspan="9" class="error">Konnte Daten nicht laden: ' + err.message + '</td></tr>';
-      document.getElementById('last10Body').innerHTML = '<tr><td class="error">Konnte Daten nicht laden: ' + err.message + '</td></tr>';
       document.getElementById('historyBody').innerHTML = '<tr><td colspan="7" class="error">Konnte Daten nicht laden: ' + err.message + '</td></tr>';
     }
   }
 
   async function initCurrent(){
+    const standEl = document.getElementById('curStand');
     try {
-      const resp = await fetch(HOURLY_DATA_URL, { cache: 'no-store' });
+      const resp = await fetch(FREQ_URL, { cache: 'no-store' });
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
       const rows = await resp.json();
-      if (!rows.length) throw new Error('Keine Stundenwerte vorhanden.');
+      if (!rows.length) throw new Error('Keine 10-Minuten-Werte vorhanden.');
 
-      const hourly = rows.map(function(r){ return Object.assign({}, r, { _date: new Date(r.obs_datetime) }); });
-      const latestHour = hourly[hourly.length - 1];
-      const todayISO = localISODate(new Date());
+      // obs_datetime_utc ist UTC ohne "Z"
+      const recent = rows.map(function(r){
+        return {
+          _date: new Date(r.obs_datetime_utc + 'Z'),
+          temp_mean_c: r.temp_c,
+          precip_mm: r.precip_mm,
+          sunshine_min: r.sunshine_min,
+          wind_mean_kmh: r.wind_mean_kmh,
+          wind_max_kmh: r.wind_gust_kmh
+        };
+      });
+      const latest = recent[recent.length - 1];
+      const todayISO = zrhISO(new Date());
 
-      const last24 = hourly.slice(-24);
+      const since24 = latest._date.getTime() - 24 * 3600 * 1000;
+      const last24 = recent.filter(function(r){ return r._date.getTime() > since24; });
       const precip24 = last24.reduce(function(sum, r){ return sum + (r.precip_mm || 0); }, 0);
       const sun24 = last24.reduce(function(sum, r){ return sum + (r.sunshine_min || 0); }, 0) / 60;
       const windVals24 = last24.map(function(r){ return r.wind_mean_kmh; }).filter(function(v){ return v != null; });
@@ -1207,24 +1227,60 @@
       const windMaxVals24 = last24.map(function(r){ return r.wind_max_kmh; }).filter(function(v){ return v != null; });
       const windMax24 = windMaxVals24.length ? Math.max.apply(null, windMaxVals24) : null;
 
-      const todayRows = hourly.filter(function(r){ return localISODate(r._date) === todayISO; });
+      const todayRows = recent.filter(function(r){ return zrhISO(r._date) === todayISO; });
       const precipToday = todayRows.reduce(function(sum, r){ return sum + (r.precip_mm || 0); }, 0);
       const sunToday = todayRows.reduce(function(sum, r){ return sum + (r.sunshine_min || 0); }, 0) / 60;
 
-      setSimpleCard('curTemp', latestHour.temp_mean_c != null ? fmt1(latestHour.temp_mean_c) + ' °C' : null);
+      setSimpleCard('curTemp', latest.temp_mean_c != null ? fmt1(latest.temp_mean_c) + ' °C' : null);
       setSimpleCard('curPrecip24', fmt1(precip24) + ' mm');
       setSimpleCard('curPrecipToday', fmt1(precipToday) + ' mm');
       setSimpleCard('curSun24', fmt1(sun24) + ' h');
       setSimpleCard('curSunToday', fmt1(sunToday) + ' h');
       setSimpleCard('curWind24', (windMean24 != null ? fmt1(windMean24) : '—') + ' / ' + (windMax24 != null ? fmt1(windMax24) : '—') + ' km/h');
 
-      drawLineChart(document.getElementById('chart48h'), hourly, 'temp_mean_c', { color: '#E30613', unit: '°C', decimals: 1, showTime: true });
+      const ageMin = (Date.now() - latest._date.getTime()) / 60000;
+      standEl.textContent = 'Stand ' + new Intl.DateTimeFormat('de-CH', {
+        timeZone: 'Europe/Zurich', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+      }).format(latest._date).replace(',', '') + ' Uhr' + (ageMin > 45 ? ' · ⚠ veraltet' : '');
+
+      drawLineChart(document.getElementById('chart48h'), recent, 'temp_mean_c', { color: '#E30613', unit: '°C', decimals: 1, showTime: true });
 
     } catch (err) {
-      document.getElementById('chart48h').innerHTML = '<div class="chart-empty">Konnte Stundenwerte nicht laden: ' + err.message + '</div>';
+      standEl.textContent = '';
+      document.getElementById('chart48h').innerHTML = '<div class="chart-empty">Konnte 10-Minuten-Werte nicht laden: ' + err.message + '</div>';
       ['curTemp','curPrecip24','curPrecipToday','curSun24','curSunToday','curWind24'].forEach(function(id){
         setSimpleCard(id, null);
       });
+    }
+  }
+
+  // Tagesvergleiche (letzte 10 Tage, 7 Tage, Vorwoche, Monat, YTD) aus meteo_klo_frequently.
+  // Nur vollständige Tage in Ortszeit; heute zählt nicht mit.
+  async function initFrequentTables(){
+    const todayISO = zrhISO(new Date());
+    try {
+      const resp = await fetch(FREQ_DAILY_URL, { cache: 'no-store' });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const data = await resp.json();
+      const freqDays = (data.days || [])
+        .filter(function(d){ return d.date < todayISO && d.n >= MIN_DAY_SAMPLES; })
+        .map(function(d){ return Object.assign({}, d, { _date: parseISO(d.date) }); });
+      if (!freqDays.length) throw new Error('Keine vollständigen Tage vorhanden.');
+
+      const ref = freqDays[freqDays.length - 1]._date;
+      comparisonRefDate = ref;
+      renderLast10Table(freqDays);
+      renderComparisonTable(dailyDays, ref, freqDays);
+    } catch (err) {
+      if (dailyLatest) {
+        // Fallback: bisherige Tageswerte
+        comparisonRefDate = dailyLatest._date;
+        renderLast10Table(dailyDays);
+        renderComparisonTable(dailyDays, dailyLatest._date, null);
+      } else {
+        document.getElementById('comparisonBody').innerHTML = '<tr><td colspan="9" class="error">Konnte Daten nicht laden: ' + err.message + '</td></tr>';
+        document.getElementById('last10Body').innerHTML = '<tr><td class="error">Konnte Daten nicht laden: ' + err.message + '</td></tr>';
+      }
     }
   }
 
@@ -1385,7 +1441,7 @@
   });
 
   initCurrent();
-  init().then(initHydro);
+  init().then(initFrequentTables).then(initHydro);
 </script>
 <script src="https://munotstadt.github.io/db_admin/assets/improvements-button.js" data-app="meteo" data-position="left"></script>
 </body>
