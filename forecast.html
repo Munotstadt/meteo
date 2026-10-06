@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Munotstadt Meteo · Forecast</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root{
+    --red:#E30613;
+    --ink:#1a1a1a;
+    --grey-900:#2b2b2b;
+    --grey-600:#666;
+    --grey-300:#d8d8d8;
+    --grey-100:#f4f4f4;
+    --bg:#ffffff;
+    --radius:6px;
+    --gain:#1e7a34;
+    --loss:#E30613;
+    --warn:#c2703d;
+    /* Wetter-Icons */
+    --rain:#2f6fb5;
+    --sun:#f0a400;
+    --cloud:#ffffff;
+    --cloud-edge:#9a9a9a;
+    --cloud-dark:#cfcfcf;
+    --mist:#9a9a9a;
+    --moon:#9aa6c4;
+    --bolt:#f0a400;
+    --snow:#ffffff;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Inter',sans-serif; font-size:15px; line-height:1.45;
+  }
+  h1,h2,h3{ font-family:'Space Grotesk',sans-serif; font-weight:600; margin:0 0 .4em 0; }
+  .mono{ font-family:'IBM Plex Mono',monospace; }
+
+  header.topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 20px; border-bottom:2px solid var(--ink);
+  }
+  header.topbar .brand{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:18px; }
+  header.topbar .brand span{ color:var(--red); }
+  nav.tabs{ display:flex; gap:4px; }
+  nav.tabs a{
+    text-decoration:none; color:var(--ink); font-size:13px; font-weight:500;
+    padding:7px 12px; border-radius:var(--radius);
+  }
+  nav.tabs a.active, nav.tabs a:hover{ background:var(--grey-100); }
+
+  main{ max-width:1080px; margin:0 auto; padding:24px 20px 60px; }
+
+  .eyebrow{
+    display:flex; align-items:center; justify-content:flex-end;
+    padding-bottom:18px; border-bottom:2px solid var(--red);
+  }
+  .status{
+    display:flex; align-items:center; gap:8px;
+    font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--grey-600);
+  }
+  .dot{
+    width:7px; height:7px; border-radius:50%; background:var(--gain);
+    box-shadow:0 0 0 3px rgba(30,122,52,0.15); animation:pulse 2.4s ease-in-out infinite;
+  }
+  .dot.stale{ background:var(--grey-600); box-shadow:none; animation:none; }
+  @media (prefers-reduced-motion: reduce){ .dot{ animation:none; } }
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:0.45;} }
+
+  .empty, .error{
+    padding:40px 10px; text-align:center; color:var(--grey-600);
+    font-family:'IBM Plex Mono',monospace; font-size:13px;
+  }
+  .error{ color:var(--loss); }
+
+  .subsection-heading{
+    display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:4px 12px;
+    margin:0 0 16px; padding-bottom:14px; border-bottom:2px solid var(--red);
+  }
+  .subsection-heading h2{ font-size:20px; margin:0; }
+  .subsection-heading h2 .stand-badge{
+    font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:500;
+    color:var(--grey-600); margin-left:8px;
+  }
+  .day-sum{ font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:500; color:var(--ink); }
+  .day-sum .rain-sum{ color:var(--rain); }
+
+  .history-title{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.08em;
+    text-transform:uppercase; color:var(--red); margin:28px 0 8px;
+  }
+
+  .days{ display:grid; grid-template-columns:minmax(0,1fr); gap:44px; }
+  .day{ min-width:0; }
+
+  .slots{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+  .slot{
+    background:var(--grey-100); border:1px solid var(--grey-300); border-radius:var(--radius);
+    padding:12px 4px 12px; display:flex; flex-direction:column; align-items:center; gap:4px;
+    color:var(--ink); font:inherit; cursor:pointer; min-width:0;
+    transition:border-color 0.15s ease, background 0.15s ease;
+  }
+  .slot:hover{ border-color:var(--grey-600); }
+  .slot[aria-pressed="true"]{ background:#fff; border-color:var(--ink); box-shadow:0 0 0 1px var(--ink) inset; }
+  .slot:focus-visible{ outline:2px solid var(--red); outline-offset:2px; }
+  .slot .nm{ font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:14px; }
+  .slot .hr{ font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.06em; color:var(--grey-600); }
+  .slot .ic{ width:44px; height:44px; margin:4px 0; }
+  .slot .cond{ font-size:12px; color:var(--grey-600); text-align:center; line-height:1.2; min-height:2.4em; overflow-wrap:anywhere; }
+  .slot .t{ font-family:'IBM Plex Mono',monospace; font-size:16px; font-weight:600; white-space:nowrap; }
+  .slot .p, .slot .w{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--grey-600); white-space:nowrap; }
+  .slot .p.wet{ color:var(--rain); font-weight:600; }
+
+  .hours{
+    display:flex; overflow-x:auto; background:var(--grey-100);
+    border:1px solid var(--grey-300); border-radius:var(--radius);
+    scrollbar-width:thin; scrollbar-color:var(--grey-300) transparent;
+  }
+  .h{
+    flex:1 0 58px; display:flex; flex-direction:column; align-items:center; gap:3px;
+    padding:10px 4px; border-left:1px solid var(--grey-300);
+  }
+  .h:first-child{ border-left:0; }
+  .h .hh{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--grey-600); }
+  .h .ic{ width:28px; height:28px; }
+  .h .ht{ font-family:'IBM Plex Mono',monospace; font-size:14px; font-weight:600; }
+  .h .hp, .h .hw{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--grey-600); white-space:nowrap; }
+  .h .hp.wet{ color:var(--rain); font-weight:600; }
+
+  .chart-wrap{
+    background:var(--grey-100); border:1px solid var(--grey-300);
+    border-radius:var(--radius); padding:12px 8px 6px;
+  }
+  .chart-wrap svg{ display:block; width:100%; height:auto; }
+  .ct{ fill:var(--grey-600); font:11px 'Inter',sans-serif; }
+  .cm{ fill:var(--grey-600); font:10px 'IBM Plex Mono',monospace; }
+  .cv{ fill:var(--ink); font:600 11px 'IBM Plex Mono',monospace; }
+  .cs{ cursor:pointer; }
+
+  .table-scroll{
+    overflow-x:auto; -webkit-overflow-scrolling:touch;
+    scrollbar-width:thin; scrollbar-color:var(--grey-300) transparent;
+  }
+  .table-scroll::-webkit-scrollbar{ height:8px; }
+  .table-scroll::-webkit-scrollbar-track{ background:var(--grey-100); }
+  .table-scroll::-webkit-scrollbar-thumb{ background:var(--grey-300); border-radius:4px; }
+  table{ width:100%; border-collapse:collapse; }
+  thead th{
+    text-align:left; font-family:'IBM Plex Mono',monospace; font-size:11px;
+    letter-spacing:0.08em; text-transform:uppercase; color:var(--grey-600); font-weight:500;
+    padding:14px 4px 10px; border-bottom:1px solid var(--grey-300); white-space:nowrap;
+  }
+  thead th.num{ text-align:right; }
+  thead th.ctr{ text-align:center; }
+  tbody td{ padding:8px 4px; border-bottom:1px solid var(--grey-300); font-size:14px; vertical-align:middle; }
+  td.ctr .ic{ width:30px; height:30px; display:block; margin:0 auto; }
+  .wk-day{ font-weight:500; white-space:nowrap; }
+  .wk-day span{ display:block; font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:400; color:var(--grey-600); }
+  .wk-temp{ min-width:64px; }
+  .wk-temp b{ display:block; font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:500; white-space:nowrap; }
+  .wk-bar{ height:4px; border-radius:2px; background:var(--grey-300); position:relative; margin-top:4px; }
+  .wk-bar i{ position:absolute; top:0; bottom:0; border-radius:2px; background:var(--ink); }
+  .wk-rain{ font-family:'IBM Plex Mono',monospace; font-size:13px; text-align:right; color:var(--grey-600); white-space:nowrap; }
+  .wk-rain.wet{ color:var(--rain); font-weight:600; }
+  .table-scroll th:first-child, .table-scroll td:first-child{
+    position:sticky; left:0; background:var(--bg); z-index:1;
+    box-shadow:1px 0 0 var(--grey-300); padding-left:8px; padding-right:8px;
+  }
+
+  .footer{
+    margin-top:36px; display:flex; align-items:center; justify-content:space-between;
+    font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--grey-600); flex-wrap:wrap; gap:6px;
+  }
+  .footer-note{
+    margin-top:10px; padding-top:10px; border-top:1px solid var(--grey-300);
+    font-family:'Inter',sans-serif; font-size:12px; line-height:1.5; color:var(--grey-600);
+  }
+
+  @media (min-width: 900px){
+    .days{ grid-template-columns:repeat(2,minmax(0,1fr)); gap:36px; }
+    .slot .ic{ width:48px; height:48px; }
+  }
+  @media (max-width: 560px){
+    .slot{ padding-inline:2px; }
+    .slot .cond{ font-size:11px; }
+    .slot .t{ font-size:14px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">Munotstadt <span>Meteo</span></div>
+  <nav class="tabs">
+    <a href="index.html">Übersicht</a>
+    <a href="forecast.html" class="active">Forecast</a>
+    <a href="sommer.html">Sommervergleich</a>
+  </nav>
+</header>
+
+<main>
+  <div class="eyebrow">
+    <div class="status">
+      <span class="dot" id="statusDot"></span>
+      <span id="statusText">connecting…</span>
+    </div>
+  </div>
+
+  <div id="content" style="margin-top:24px">
+    <div class="empty">Loading forecast…</div>
+  </div>
+
+  <div class="footer">
+    <span>Wetter Niederhasli · <span id="coords">47.4738° N, 8.4926° E</span></span>
+    <span id="detailMeta">—</span>
+  </div>
+  <div class="footer-note">
+    Stündliche Prognose aus Cloudflare D1, live über Cloudflare Pages Functions abgefragt. Zeiten in Ortszeit, Wind in km/h. Tageszeiten: Morgen 06–11, Mittag 11–14, Nachmittag 14–18, Abend 18–22 Uhr. Das Symbol einer Tageszeit zeigt Gewitter, Schnee, Regen, Schauer, Nieselregen oder Nebel, sobald es in mindestens einem Drittel der Stunden vorkommt, sonst die mittlere Bewölkung.
+  </div>
+</main>
+
+<script>
+const SLOTS = [
+  {name:'Morgen',short:'Morg.',chart:'Morgen',from:6,to:11},
+  {name:'Mittag',short:'Mitt.',chart:'Mittag',from:11,to:14},
+  {name:'Nachmittag',short:'Nach.',chart:'Nachm.',from:14,to:18},
+  {name:'Abend',short:'Abend',chart:'Abend',from:18,to:22}
+];
+const TZ = 'Europe/Zurich';
+
+/* ---------- Icons ---------- */
+let maskId = 0;
+const CLOUD = 'M13 36a8 8 0 0 1 0-16a11 11 0 0 1 21-2a9 9 0 0 1 1 18z';
+const cloud = (tr, fill) => `<g transform="${tr}"><path d="${CLOUD}" fill="var(${fill || '--cloud'})" stroke="var(--cloud-edge)" stroke-width="1.6" stroke-linejoin="round"/></g>`;
+const rays = (cx, cy, r1, r2) => {
+  let s = '';
+  for (let i = 0; i < 8; i++) {
+    const a = i * Math.PI / 4, c = Math.cos(a), n = Math.sin(a);
+    s += `<line x1="${(cx + c * r1).toFixed(1)}" y1="${(cy + n * r1).toFixed(1)}" x2="${(cx + c * r2).toFixed(1)}" y2="${(cy + n * r2).toFixed(1)}"/>`;
+  }
+  return `<g stroke="var(--sun)" stroke-width="2.4" stroke-linecap="round">${s}</g>`;
+};
+const drops = (xs, y0, y1) => `<g stroke="var(--rain)" stroke-width="2.6" stroke-linecap="round">${xs.map(x => `<line x1="${x}" y1="${y0}" x2="${x - 3}" y2="${y1}"/>`).join('')}</g>`;
+const moon = (cx, cy, r, hx, hy, hr) => {
+  const id = 'mk' + (++maskId);
+  return `<mask id="${id}"><rect width="48" height="48" fill="#fff"/><circle cx="${hx}" cy="${hy}" r="${hr}" fill="#000"/></mask><circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--moon)" mask="url(#${id})"/>`;
+};
+const ICONS = {
+  sun: () => rays(24, 24, 13, 18) + '<circle cx="24" cy="24" r="9" fill="var(--sun)"/>',
+  moon: () => moon(22, 25, 14, 31, 18, 12),
+  partly: () => rays(31, 16, 8.5, 12) + '<circle cx="31" cy="16" r="6" fill="var(--sun)"/>' + cloud('translate(3,9) scale(.82)'),
+  moonpartly: () => moon(30, 16, 9, 35, 12, 7.5) + cloud('translate(3,9) scale(.82)'),
+  cloud: () => cloud('translate(0,3)'),
+  overcast: () => cloud('translate(8,-1) scale(.7)', '--cloud-dark') + cloud('translate(0,5) scale(.95)', '--cloud-dark'),
+  fog: () => cloud('translate(2,-3) scale(.85)') + '<g stroke="var(--mist)" stroke-width="2.6" stroke-linecap="round"><line x1="9" y1="33" x2="37" y2="33"/><line x1="13" y1="38.5" x2="42" y2="38.5"/><line x1="9" y1="44" x2="33" y2="44"/></g>',
+  rain: () => cloud('translate(4,-2) scale(.82)') + drops([16, 24, 32], 33, 41),
+  heavy: () => cloud('translate(4,-3) scale(.82)', '--cloud-dark') + drops([14, 21, 28, 35], 31, 43),
+  showers: () => rays(34, 12, 7, 10.5) + '<circle cx="34" cy="12" r="5" fill="var(--sun)"/>' + cloud('translate(1,3) scale(.8)') + drops([13, 21, 29], 35, 43),
+  thunder: () => cloud('translate(4,-3) scale(.82)', '--cloud-dark') + '<polygon points="27,25 19,37 25,37 21,47 33,33 26,33 30,25" fill="var(--bolt)" stroke="var(--cloud-edge)" stroke-width="1" stroke-linejoin="round"/>',
+  snow: () => cloud('translate(4,-2) scale(.82)') + '<g fill="var(--snow)" stroke="var(--cloud-edge)" stroke-width="1.2"><circle cx="15" cy="35" r="2.6"/><circle cx="24" cy="41" r="2.6"/><circle cx="33" cy="35" r="2.6"/></g>'
+};
+const icon = type => `<svg class="ic" viewBox="0 0 48 48" aria-hidden="true">${ICONS[type]()}</svg>`;
+
+/* ---------- Auswertung: Wettercode nie mitteln, Schwere vor Häufigkeit ---------- */
+const catOf = c => c >= 95 ? 'thunder'
+  : ((c >= 71 && c <= 77) || c === 85 || c === 86) ? 'snow'
+  : (c >= 61 && c <= 67) ? 'rain'
+  : (c >= 80 && c <= 82) ? 'showers'
+  : (c >= 51 && c <= 57) ? 'drizzle'
+  : (c === 45 || c === 48) ? 'fog' : null;
+const ORDER = ['thunder', 'snow', 'rain', 'showers', 'drizzle', 'fog'];
+const mean = a => a.reduce((s, v) => s + v, 0) / a.length;
+
+function summarize(rows, night) {
+  const n = rows.length, thr = Math.ceil(n / 3);
+  const by = {};
+  for (const r of rows) { const c = catOf(r.code); if (c) (by[c] = by[c] || []).push(r.code); }
+  for (const cat of ORDER) {
+    const codes = by[cat];
+    if (!codes || codes.length < (cat === 'thunder' ? 1 : thr)) continue;
+    if (cat === 'thunder') return {type: 'thunder', label: 'Gewitter'};
+    if (cat === 'snow') return {type: 'snow', label: 'Schnee'};
+    if (cat === 'rain') {
+      const heavy = codes.some(c => c >= 63);
+      return {type: heavy ? 'heavy' : 'rain', label: codes.some(c => c >= 65) ? 'Starker Regen' : heavy ? 'Regen' : 'Leichter Regen'};
+    }
+    if (cat === 'showers') return {type: 'showers', label: 'Schauer'};
+    if (cat === 'drizzle') return {type: 'rain', label: 'Nieselregen'};
+    return {type: 'fog', label: 'Nebel'};
+  }
+  const c = mean(rows.map(r => r.cloud));
+  if (c < 20) return night ? {type: 'moon', label: 'Klar'} : {type: 'sun', label: 'Sonnig'};
+  if (c < 50) return night ? {type: 'moonpartly', label: 'Meist klar'} : {type: 'partly', label: 'Überwiegend sonnig'};
+  if (c < 80) return night ? {type: 'moonpartly', label: 'Wechselnd bewölkt'} : {type: 'partly', label: 'Teils sonnig'};
+  if (c < 95) return {type: 'cloud', label: 'Bewölkt'};
+  return {type: 'overcast', label: 'Bedeckt'};
+}
+const slotRows = (day, s) => day.rows.filter(r => r.h >= s.from && r.h < s.to);
+const slotNight = (s, rows) => s.from >= 18 && mean(rows.map(r => r.rad)) < 40;
+function slotInfo(day, s) {
+  const rows = slotRows(day, s);
+  return {
+    rows,
+    sum: summarize(rows, slotNight(s, rows)),
+    tmin: Math.min(...rows.map(r => r.temp)),
+    tmax: Math.max(...rows.map(r => r.temp)),
+    pr: rows.reduce((a, r) => a + r.pr, 0),
+    wind: Math.max(...rows.map(r => r.wind))
+  };
+}
+
+/* ---------- Formatierung ---------- */
+const pad = n => String(n).padStart(2, '0');
+const r0 = v => Math.round(v) + 0;
+const range = (a, b) => r0(a) === r0(b) ? `${r0(a)}°` : `${r0(a)}–${r0(b)}°`;
+const mm = v => v < 0.05 ? '0' : v.toFixed(1);
+const dateObj = d => new Date(d + 'T12:00:00Z');
+const wd = (d, long) => dateObj(d).toLocaleDateString('de-CH', {weekday: long ? 'long' : 'short', timeZone: 'UTC'});
+const dm = d => `${+d.slice(8, 10)}.${+d.slice(5, 7)}.`;
+
+/* ---------- Daten ---------- */
+function buildDays(raw) {
+  const map = new Map();
+  for (const r of raw) {
+    if (r[2] == null || r[3] == null) continue;
+    const date = r[0].slice(0, 10), h = +r[0].slice(11, 13);
+    if (!map.has(date)) map.set(date, []);
+    map.get(date).push({h, rad: r[1] || 0, cloud: r[2], temp: r[3], pr: r[4] || 0, wind: r[5] || 0, code: r[6] == null ? 0 : r[6]});
+  }
+  return [...map.entries()].sort((a, b) => a[0] < b[0] ? -1 : 1)
+    .map(([date, rows]) => ({date, rows: rows.sort((a, b) => a.h - b.h)}))
+    .filter(d => d.rows.length === 24);
+}
+
+const todayStr = new Intl.DateTimeFormat('en-CA', {timeZone: TZ}).format(new Date());
+const nowH = +new Intl.DateTimeFormat('de-CH', {timeZone: TZ, hour: 'numeric', hourCycle: 'h23'}).format(new Date());
+const tomorrowStr = new Date(dateObj(todayStr).getTime() + 864e5).toISOString().slice(0, 10);
+
+let days = [], sel = [];
+const charts = [];
+
+function dayTitle(d) {
+  if (d.date === todayStr) return 'Heute';
+  if (d.date === tomorrowStr) return 'Morgen';
+  return wd(d.date, true);
+}
+
+/* ---------- Tag-Ansicht ---------- */
+function renderDay(i) {
+  const d = days[i], el = document.getElementById('day-' + i);
+  if (!el) return;
+  const infos = SLOTS.map(s => slotInfo(d, s));
+  const si = sel[i], s = SLOTS[si], cur = infos[si];
+  const tmin = Math.min(...d.rows.map(r => r.temp)), tmax = Math.max(...d.rows.map(r => r.temp));
+  const prTot = d.rows.reduce((a, r) => a + r.pr, 0);
+
+  const cards = SLOTS.map((sl, k) => {
+    const f = infos[k];
+    return `<button type="button" class="slot" data-day="${i}" data-slot="${k}" aria-pressed="${k === si}">
+      <span class="nm">${sl.name}</span>
+      <span class="hr">${pad(sl.from)}–${pad(sl.to)}</span>
+      ${icon(f.sum.type)}
+      <span class="cond">${f.sum.label}</span>
+      <span class="t">${range(f.tmin, f.tmax)}</span>
+      <span class="p${f.pr >= 0.05 ? ' wet' : ''}">${mm(f.pr)} mm</span>
+      <span class="w">${r0(f.wind)} km/h</span>
+    </button>`;
+  }).join('');
+
+  const hours = cur.rows.map(r => {
+    const t = summarize([r], r.rad < 1);
+    return `<div class="h"><span class="hh">${pad(r.h)}</span>${icon(t.type)}<span class="ht">${r0(r.temp)}°</span><span class="hp${r.pr >= 0.05 ? ' wet' : ''}">${r.pr >= 0.05 ? mm(r.pr) + ' mm' : '–'}</span><span class="hw">${r0(r.wind)} km/h</span></div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="subsection-heading">
+      <h2>${dayTitle(d)}<span class="stand-badge">${wd(d.date)} ${dm(d.date)}</span></h2>
+      <div class="day-sum">${range(tmin, tmax)} · <span class="${prTot >= 0.05 ? 'rain-sum' : ''}">${mm(prTot)} mm</span></div>
+    </div>
+    <div class="slots">${cards}</div>
+    <div class="history-title">Stundenwerte — ${s.name} ${pad(s.from)}–${pad(s.to)} Uhr</div>
+    <div class="hours">${hours}</div>
+    <div class="history-title">Verlauf — Temperatur (°C) und Niederschlag (mm)</div>
+    <div class="chart-wrap" id="chart-${i}"></div>`;
+  charts[i] = {holder: document.getElementById('chart-' + i), lastW: 0};
+  drawChart(i);
+}
+
+/* ---------- Kurve: Temperatur als Linie, Niederschlag als Balken, Tageszeit als Band ---------- */
+function drawChart(i) {
+  const c = charts[i];
+  if (!c || !c.holder) return;
+  const d = days[i];
+  c.lastW = c.holder.clientWidth;
+  const W = Math.max(280, Math.round(c.holder.clientWidth - 16)), H = 200;
+  const ml = 30, mr = 8, mt = 24, mb = 22, pw = W - ml - mr;
+  const X = h => ml + pw * h / 24, xc = h => X(h + 0.5);
+  const temps = d.rows.map(r => r.temp), prs = d.rows.map(r => r.pr);
+  const lo = Math.floor(Math.min(...temps)) - 1, hi = Math.ceil(Math.max(...temps)) + 1;
+  const yT0 = mt + 4, yT1 = mt + 104;
+  const yT = v => yT1 - (v - lo) / (hi - lo) * (yT1 - yT0);
+  const base = H - mb, pmaxH = 44, pmax = Math.max(2, ...prs);
+  const bandFill = ['rgba(0,0,0,.025)', 'rgba(0,0,0,.055)', 'rgba(0,0,0,.025)', 'rgba(0,0,0,.055)'];
+
+  let g = '';
+  SLOTS.forEach((s, k) => {
+    const x0 = X(s.from), w = X(s.to) - x0;
+    g += `<rect class="cs" data-day="${i}" data-slot="${k}" x="${x0.toFixed(1)}" y="${mt - 14}" width="${w.toFixed(1)}" height="${base - mt + 14}" fill="${bandFill[k]}"/>`;
+    g += `<text class="ct" x="${(x0 + w / 2).toFixed(1)}" y="${mt - 3}" text-anchor="middle">${s.chart}</text>`;
+  });
+  const s = SLOTS[sel[i]];
+  g += `<rect x="${X(s.from).toFixed(1)}" y="${mt - 14}" width="${(X(s.to) - X(s.from)).toFixed(1)}" height="${base - mt + 14}" fill="none" stroke="var(--ink)" stroke-width="1.5" pointer-events="none"/>`;
+
+  const tHi = Math.round(Math.max(...temps)), tLo = Math.round(Math.min(...temps));
+  [tLo, tHi].forEach(v => {
+    const y = yT(v).toFixed(1);
+    g += `<line x1="${ml}" x2="${W - mr}" y1="${y}" y2="${y}" stroke="var(--grey-300)" stroke-dasharray="2 3" pointer-events="none"/>`;
+    g += `<text class="cm" x="${ml - 5}" y="${(+y + 3.5).toFixed(1)}" text-anchor="end">${v}°</text>`;
+  });
+  g += `<line x1="${ml}" x2="${W - mr}" y1="${base}" y2="${base}" stroke="var(--grey-300)"/>`;
+
+  prs.forEach((v, h) => {
+    if (v <= 0) return;
+    const bh = Math.max(1.5, v / pmax * pmaxH), bw = pw / 24 * 0.62;
+    g += `<rect x="${(xc(h) - bw / 2).toFixed(1)}" y="${(base - bh).toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="1" fill="var(--rain)" opacity=".85" pointer-events="none"/>`;
+  });
+  const pi = prs.indexOf(Math.max(...prs));
+  if (prs[pi] > 0) {
+    const bh = Math.max(1.5, prs[pi] / pmax * pmaxH);
+    g += `<text class="cm" x="${Math.min(W - mr - 14, Math.max(ml + 14, xc(pi))).toFixed(1)}" y="${(base - bh - 4).toFixed(1)}" text-anchor="middle" style="fill:var(--rain)">${prs[pi].toFixed(1)} mm</text>`;
+  } else {
+    g += `<text class="cm" x="${ml + 4}" y="${base - 5}">kein Niederschlag</text>`;
+  }
+
+  const pts = d.rows.map(r => `${xc(r.h).toFixed(1)},${yT(r.temp).toFixed(1)}`);
+  g += `<path d="M${pts[0].split(',')[0]},${yT1} L${pts.join(' L')} L${pts[pts.length - 1].split(',')[0]},${yT1} Z" fill="var(--ink)" opacity=".06" pointer-events="none"/>`;
+  g += `<polyline points="${pts.join(' ')}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" pointer-events="none"/>`;
+  const iMax = temps.indexOf(Math.max(...temps)), iMin = temps.indexOf(Math.min(...temps));
+  [iMax, iMin].forEach(k => {
+    const x = xc(k), y = yT(temps[k]);
+    g += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.5" fill="#fff" stroke="var(--ink)" stroke-width="2" pointer-events="none"/>`;
+    g += `<text class="cv" x="${Math.min(W - mr - 12, Math.max(ml + 12, x)).toFixed(1)}" y="${(y - 8).toFixed(1)}" text-anchor="middle">${temps[k].toFixed(1)}°</text>`;
+  });
+
+  for (let h = 0; h <= 21; h += 3) g += `<text class="cm" x="${X(h).toFixed(1)}" y="${H - 6}" text-anchor="middle">${pad(h)}</text>`;
+
+  c.holder.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Temperatur und Niederschlag, stündlich">${g}</svg>`;
+}
+
+/* ---------- Tage 3 bis 7, vereinfacht ---------- */
+function renderWeek() {
+  const rest = days.slice(2, 7);
+  if (!rest.length) return '';
+  const stats = rest.map(d => ({d, lo: Math.min(...d.rows.map(r => r.temp)), hi: Math.max(...d.rows.map(r => r.temp)), pr: d.rows.reduce((a, r) => a + r.pr, 0)}));
+  const gLo = Math.min(...stats.map(s => s.lo)), gHi = Math.max(...stats.map(s => s.hi)), span = Math.max(1, gHi - gLo);
+  const head = `<tr><th>Tag</th>${SLOTS.map(s => `<th class="ctr" title="${s.name} ${pad(s.from)}–${pad(s.to)} Uhr">${s.short}</th>`).join('')}<th>Temp</th><th class="num">mm</th></tr>`;
+  const rows = stats.map(s => {
+    const ic = SLOTS.map(sl => {
+      const f = slotInfo(s.d, sl);
+      return `<td class="ctr" title="${sl.name}: ${f.sum.label}">${icon(f.sum.type)}</td>`;
+    }).join('');
+    const left = (s.lo - gLo) / span * 100, w = Math.max(6, (s.hi - s.lo) / span * 100);
+    return `<tr><td class="wk-day">${wd(s.d.date)}<span>${dm(s.d.date)}</span></td>${ic}
+      <td class="wk-temp"><b>${r0(s.lo)}° / ${r0(s.hi)}°</b><div class="wk-bar"><i style="left:${left.toFixed(1)}%;width:${Math.min(w, 100 - left).toFixed(1)}%"></i></div></td>
+      <td class="wk-rain${s.pr >= 0.05 ? ' wet' : ''}">${mm(s.pr)}</td></tr>`;
+  }).join('');
+  return `<div class="subsection-heading" style="margin-top:44px"><h2>Nächste Tage</h2></div>
+    <div class="table-scroll"><table id="weekTable"><thead>${head}</thead><tbody>${rows}</tbody></table></div>`;
+}
+
+/* ---------- Start ---------- */
+function start(payload) {
+  const all = buildDays(payload.rows || []);
+  let list = all.filter(d => d.date >= todayStr);
+  const stale = !list.length || list[0].date !== todayStr;
+  if (!list.length) list = all;
+  days = list.slice(0, 7);
+
+  const dot = document.getElementById('statusDot'), txt = document.getElementById('statusText');
+  if (!days.length) {
+    document.getElementById('content').innerHTML = '<div class="empty">Keine Prognosedaten vorhanden.</div>';
+    dot.classList.add('stale'); txt.textContent = 'keine Daten';
+    return;
+  }
+  dot.classList.toggle('stale', stale);
+  txt.textContent = stale ? 'Prognose veraltet' : 'live';
+
+  if (payload.fetched_at) {
+    const fs = new Intl.DateTimeFormat('de-CH', {timeZone: TZ, weekday: 'short', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit'}).format(new Date(payload.fetched_at));
+    document.getElementById('detailMeta').textContent = `Abruf ${fs} Uhr`;
+  }
+
+  const detail = days.slice(0, 2);
+  document.getElementById('content').innerHTML =
+    `<div class="days">${detail.map((_, i) => `<section class="day" id="day-${i}"></section>`).join('')}</div>${renderWeek()}`;
+  sel = detail.map(d => d.date !== todayStr ? 0 : (nowH < 11 ? 0 : nowH < 14 ? 1 : nowH < 18 ? 2 : 3));
+  detail.forEach((_, i) => renderDay(i));
+}
+
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-slot]');
+  if (!t) return;
+  const i = +t.dataset.day;
+  sel[i] = +t.dataset.slot;
+  renderDay(i);
+});
+
+let rz = null;
+const redraw = () => {
+  clearTimeout(rz);
+  rz = setTimeout(() => charts.forEach((c, i) => { if (c && c.holder && Math.abs(c.holder.clientWidth - c.lastW) > 2) drawChart(i); }), 80);
+};
+if (window.ResizeObserver) new ResizeObserver(redraw).observe(document.body); else window.addEventListener('resize', redraw);
+
+fetch('/api/forecast')
+  .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+  .then(start)
+  .catch(err => {
+    document.getElementById('statusDot').classList.add('stale');
+    document.getElementById('statusText').textContent = 'connection failed';
+    document.getElementById('content').innerHTML = `<div class="error">Prognose konnte nicht geladen werden (${err.message}).</div>`;
+  });
+</script>
+<script src="https://munotstadt.github.io/db_admin/assets/improvements-button.js" data-app="meteo" data-position="left"></script>
+</body>
+</html>
