@@ -509,6 +509,89 @@
   const MIN_DAY_SAMPLES = 120; // von 144 Messungen à 10 Min; kleinere Tage gelten als unvollständig
 
   let comparisonRefDate = null;
+
+  // Gemeinsamer Zeitraum für alle Charts (Meteo + Hydro)
+  const chartRange = { range: '30D', from: null, to: null };
+  let renderMeteoCharts = null;
+  let hydroChartSeries = null;
+
+  function renderAllCharts(){
+    if (renderMeteoCharts) renderMeteoCharts();
+    renderHydroCharts();
+  }
+
+  function rangeSpanDays(){
+    if (chartRange.range === '30D') return 30;
+    if (chartRange.range === '90D') return 90;
+    if (chartRange.range === '12M') return 365;
+    if (chartRange.range === '3Y') return 3 * 365;
+    if (chartRange.range === 'CUSTOM') {
+      const from = chartRange.from ? chartRange.from.getTime() : 0;
+      const to = chartRange.to ? chartRange.to.getTime() : Date.now();
+      return (to - from) / 86400000;
+    }
+    return Infinity;
+  }
+
+  // Mittelwert pro Kalendertag (Ortszeit) für lange Zeiträume
+  function aggregateDaily(readings, key){
+    const buckets = {};
+    const order = [];
+    readings.forEach(function(r){
+      if (r[key] == null) return;
+      const d = r._date;
+      const k = d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate();
+      if (!buckets[k]) { buckets[k] = { sum: 0, n: 0, date: new Date(d.getFullYear(), d.getMonth(), d.getDate()) }; order.push(k); }
+      buckets[k].sum += r[key]; buckets[k].n++;
+    });
+    return order.map(function(k){
+      const b = buckets[k];
+      const o = { _date: b.date }; o[key] = b.sum / b.n;
+      return o;
+    });
+  }
+
+  function renderHydroCharts(){
+    if (!hydroChartSeries) return;
+    const daily = rangeSpanDays() > 90;
+    hydroChartSeries.forEach(function(s){
+      const chartEl = document.getElementById(s.chartId);
+      const filtered = filterByRange(s.readings, chartRange.range, chartRange.from, chartRange.to);
+      const pts = daily ? aggregateDaily(filtered, s.key) : filtered;
+      if (pts.length < 2) {
+        chartEl.innerHTML = '<div class="chart-empty">Keine Daten im gewählten Zeitraum.</div>';
+        return;
+      }
+      drawLineChart(chartEl, pts, s.key, { color: s.color, unit: s.unit, decimals: s.decimals, showTime: !daily });
+    });
+  }
+
+  function initRangeSelector(){
+    const buttons = document.querySelectorAll('#rangeSelector .range-btn');
+    const rangeFromEl = document.getElementById('rangeFrom');
+    const rangeToEl = document.getElementById('rangeTo');
+    buttons.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        chartRange.range = btn.dataset.range;
+        chartRange.from = null; chartRange.to = null;
+        rangeFromEl.value = '';
+        rangeToEl.value = '';
+        buttons.forEach(function(b){ b.classList.toggle('active', b === btn); });
+        renderAllCharts();
+      });
+    });
+    function applyCustomRange(){
+      const fromVal = rangeFromEl.value, toVal = rangeToEl.value;
+      if (!fromVal && !toVal) return;
+      chartRange.from = fromVal ? parseISO(fromVal) : null;
+      chartRange.to = toVal ? parseISO(toVal) : null;
+      chartRange.range = 'CUSTOM';
+      buttons.forEach(function(b){ b.classList.remove('active'); });
+      renderAllCharts();
+    }
+    rangeFromEl.addEventListener('change', applyCustomRange);
+    rangeToEl.addEventListener('change', applyCustomRange);
+  }
   let dailyDays = [];
   let dailyLatest = null;
 
@@ -562,7 +645,8 @@
   function filterByRange(days, range, customFrom, customTo){
     if (range === 'CUSTOM') {
       return days.filter(function(d){
-        return (!customFrom || d._date >= customFrom) && (!customTo || d._date <= customTo);
+        const toEx = customTo ? new Date(customTo.getFullYear(), customTo.getMonth(), customTo.getDate() + 1) : null;
+        return (!customFrom || d._date >= customFrom) && (!toEx || d._date < toEx);
       });
     }
     if (range === 'ALL') return days;
@@ -1114,8 +1198,6 @@
 
       renderYesterday(days, todayISO);
 
-      let currentRange = '30D';
-      let customFrom = null, customTo = null;
       const chartContainers = {
         Temp: document.getElementById('chartTemp'),
         Precip: document.getElementById('chartPrecip'),
@@ -1126,7 +1208,7 @@
       };
 
       function renderCharts(){
-        const filtered = filterByRange(days, currentRange, customFrom, customTo);
+        const filtered = filterByRange(days, chartRange.range, chartRange.from, chartRange.to);
         drawLineChart(chartContainers.Temp, filtered, 'temp_mean_c', { bandMinKey: 'temp_min_c', bandMaxKey: 'temp_max_c', color: '#E30613', unit: '°C', decimals: 1 });
         drawBarChart(chartContainers.Precip, filtered, 'precip_mm', { color: '#1e7a34', unit: ' mm', decimals: 1 });
         const withSunHours2 = filtered.map(function(d){ return Object.assign({}, d, { sunshine_h: d.sunshine_min != null ? d.sunshine_min / 60 : null }); });
@@ -1136,39 +1218,17 @@
         drawLineChart(chartContainers.Hum, filtered, 'humidity_pct', { color: '#1F6FA8', unit: ' %', decimals: 0 });
       }
 
-      document.querySelectorAll('#rangeSelector .range-btn').forEach(function(btn){
-        btn.addEventListener('click', function(){
-          currentRange = btn.dataset.range;
-          customFrom = null; customTo = null;
-          document.getElementById('rangeFrom').value = '';
-          document.getElementById('rangeTo').value = '';
-          document.querySelectorAll('#rangeSelector .range-btn').forEach(function(b){ b.classList.toggle('active', b === btn); });
-          renderCharts();
-        });
-      });
-
       const rangeFromEl = document.getElementById('rangeFrom');
       const rangeToEl = document.getElementById('rangeTo');
       const minDate = new Date(latest._date.getFullYear() - 20, latest._date.getMonth(), latest._date.getDate());
       const minDateStr = minDate.toISOString().slice(0, 10);
-      const maxDateStr = latest.date;
+      const maxDateStr = localISODate(new Date());
       [rangeFromEl, rangeToEl].forEach(function(el){
         el.min = minDateStr;
         el.max = maxDateStr;
       });
 
-      function applyCustomRange(){
-        const fromVal = rangeFromEl.value, toVal = rangeToEl.value;
-        if (!fromVal && !toVal) return;
-        customFrom = fromVal ? parseISO(fromVal) : null;
-        customTo = toVal ? parseISO(toVal) : null;
-        currentRange = 'CUSTOM';
-        document.querySelectorAll('#rangeSelector .range-btn').forEach(function(b){ b.classList.remove('active'); });
-        renderCharts();
-      }
-      rangeFromEl.addEventListener('change', applyCustomRange);
-      rangeToEl.addEventListener('change', applyCustomRange);
-
+      renderMeteoCharts = renderCharts;
       renderCharts();
       renderClimatologyTable(days, latest._date);
 
@@ -1398,6 +1458,7 @@
 
       let latestOverall = null;
       const refDate = comparisonRefDate || new Date();
+      const series = [];
 
       Object.keys(stations).forEach(function(prefix){
         const cfg = stations[prefix];
@@ -1409,17 +1470,15 @@
         const latestDate = renderVerticalBar(prefix, readings, cfg.key, cfg.decimals, cfg.unit, cfg.color);
         if (latestDate && (!latestOverall || latestDate > latestOverall)) latestOverall = latestDate;
 
-        const chartEl = document.getElementById(cfg.chartId);
-        if (readings.length < 2) {
-          chartEl.innerHTML = '<div class="chart-empty">Noch keine Daten vorhanden.</div>';
-        } else {
-          drawLineChart(chartEl, readings, cfg.key, { color: cfg.color, unit: cfg.unit, decimals: cfg.decimals, showTime: true });
-        }
+        series.push({ chartId: cfg.chartId, readings: readings, key: cfg.key, color: cfg.color, unit: cfg.unit, decimals: cfg.decimals });
 
         appendHydroLast10Row(cfg.compareLabel, readings, cfg.key, cfg.decimals, cfg.unit);
         appendHydroComparisonRow(cfg.compareLabel, readings, cfg.key, cfg.decimals, cfg.unit, refDate);
         appendHydroClimatologyRow(cfg.compareLabel, readings, cfg.key, cfg.decimals, cfg.unit, refDate);
       });
+
+      hydroChartSeries = series;
+      renderHydroCharts();
 
       headerBadge.textContent = latestOverall ? ('Stand ' + fmtHydroDateTime(latestOverall)) : '—';
 
@@ -1440,6 +1499,7 @@
     table.hidden = expanded;
   });
 
+  initRangeSelector();
   initCurrent();
   init().then(initFrequentTables).then(initHydro);
 </script>
